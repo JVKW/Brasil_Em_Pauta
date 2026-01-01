@@ -12,7 +12,6 @@ export default {
       fontFamily: {
         body: ['Lora', 'serif'],
         headline: ['Playfair Display', 'serif'],
-        code: ['monospace'],
       },
       colors: {
         background: 'hsl(var(--background))',

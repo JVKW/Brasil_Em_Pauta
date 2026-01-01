@@ -1,9 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { DecisionCard, DecisionOption, Player, Indicator } from "@/lib/types";
 import { roleDetails, indicatorDetails } from "@/lib/game-data";
-import { Loader2, ArrowUp, ArrowDown, Coins, HelpCircle } from "lucide-react";
+import { Loader2, ArrowUp, Coins, HelpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 type DecisionCardProps = {
@@ -50,42 +49,33 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
   return (
     <Card className="shadow-2xl border-primary/20 bg-card/80 backdrop-blur-sm border-2 flex flex-col h-full overflow-hidden">
       <CardHeader className="flex-shrink-0">
-        <CardTitle className="text-accent text-2xl lg:text-3xl">{card.title}</CardTitle>
+        <CardTitle className="text-accent font-headline text-2xl lg:text-3xl">{card.title}</CardTitle>
         <CardDescription className="text-base lg:text-lg pt-2 text-foreground/80">{card.dilema}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col gap-3 justify-center p-4 min-h-0">
+      <CardContent className="flex-grow flex flex-col gap-3 justify-center p-4">
         {card.options.map((option) => (
-          <TooltipProvider key={option.id}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="w-full">
-                  <Button
-                    variant={option.variant}
-                    className="w-full h-auto min-h-[4rem] text-base py-3 justify-start text-left whitespace-normal leading-snug flex flex-col items-start"
-                    onClick={() => onDecision(option)}
-                    disabled={isProcessing}
-                  >
-                    <div className="w-full flex justify-between items-center mb-2">
-                      <span className="font-bold text-lg">{option.name}</span>
-                       {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
-                    </div>
-                    <p className="text-sm text-left font-normal text-foreground/70 w-full mb-2">{option.description}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {getEffectText(option).map((text, i) => (
-                        <Badge key={i} variant="secondary" className="flex items-center gap-1 text-xs">
-                          <EffectIcon effect={text} />
-                          {text}
-                        </Badge>
-                      ))}
-                    </div>
-                  </Button>
+            <div key={option.id} className="w-full flex-1">
+              <Button
+                variant={option.variant}
+                className="w-full h-full text-base py-3 justify-start text-left whitespace-normal leading-snug flex flex-col items-start"
+                onClick={() => onDecision(option)}
+                disabled={isProcessing}
+              >
+                <div className="w-full flex justify-between items-center mb-2">
+                  <span className="font-bold text-lg">{option.name}</span>
+                    {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
                 </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" align="start">
-                <p>{option.description}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+                <p className="text-sm text-left font-normal text-foreground/70 w-full mb-2 flex-grow">{option.description}</p>
+                <div className="flex flex-wrap gap-2">
+                  {getEffectText(option).map((text, i) => (
+                    <Badge key={i} variant="secondary" className="flex items-center gap-1 text-xs">
+                      <EffectIcon effect={text} />
+                      {text}
+                    </Badge>
+                  ))}
+                </div>
+              </Button>
+            </div>
         ))}
       </CardContent>
        <CardFooter className="flex-shrink-0">
