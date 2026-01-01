@@ -53,7 +53,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
         <CardTitle className="text-accent text-2xl lg:text-3xl">{card.title}</CardTitle>
         <CardDescription className="text-base lg:text-lg pt-2 text-foreground/80">{card.dilema}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col gap-3 justify-center p-4">
+      <CardContent className="flex-grow flex flex-col gap-3 justify-center p-4 min-h-0">
         {card.options.map((option) => (
           <TooltipProvider key={option.id}>
             <Tooltip>
