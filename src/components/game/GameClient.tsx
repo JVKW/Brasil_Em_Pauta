@@ -39,7 +39,7 @@ export default function GameClient({
   const currentPlayer = useMemo(() => players[currentPlayerIndex], [players, currentPlayerIndex]);
 
   const addLog = (log: Omit<LogEntry, 'id'>) => {
-    setLogs(prevLogs => [...prevLogs, { ...log, id: prevLogs.length }]);
+    setLogs(prevLogs => [{ ...log, id: Date.now() }, ...prevLogs]);
   };
 
   const handleRestart = () => {
@@ -118,7 +118,7 @@ export default function GameClient({
     newGameState.boardPosition = Math.min(20, newGameState.boardPosition + boardChange);
 
     const bossOnCurrentTile = initialBosses.find(b => b.position === newGameState.boardPosition);
-    if (bossOnCurrentTile) {
+    if (bossOnCurrentTile && boardChange > 0) {
       if (newGameState.indicators[bossOnCurrentTile.requirement.indicator] < bossOnCurrentTile.requirement.level) {
         newGameState.boardPosition = Math.max(1, newGameState.boardPosition - 1);
         toast({
@@ -127,11 +127,26 @@ export default function GameClient({
           description: `O progresso da nação foi barrado por "${bossOnCurrentTile.name}". O indicador de ${indicatorDetails[bossOnCurrentTile.requirement.indicator].name} precisa ser no mínimo ${bossOnCurrentTile.requirement.level}.`,
           icon: <Swords className="h-6 w-6 text-destructive-foreground" />,
         });
+        addLog({
+            turn,
+            playerName: "Sistema",
+            playerRole: "Chefe",
+            decision: `Falha ao enfrentar ${bossOnCurrentTile.name}`,
+            effects: "Progresso da nação regrediu."
+        });
+
       } else {
         toast({
           title: "Desafio Superado!",
           description: `A nação venceu o desafio "${bossOnCurrentTile.name}"!`,
           icon: <Crown className="h-6 w-6 text-amber-500" />,
+        });
+         addLog({
+            turn,
+            playerName: "Sistema",
+            playerRole: "Chefe",
+            decision: `Vitória sobre ${bossOnCurrentTile.name}`,
+            effects: "A nação avança!"
         });
       }
     }
@@ -142,6 +157,13 @@ export default function GameClient({
     const winCheckResult = await checkWinConditionsAction(newGameState, newPlayers);
     if (winCheckResult.isGameOver) {
       setGameOver(winCheckResult);
+       addLog({
+          turn,
+          playerName: "Sistema",
+          playerRole: "Fim de Jogo",
+          decision: winCheckResult.message,
+          effects: "A partida terminou."
+      });
       setIsProcessing(false);
       return;
     }
@@ -158,25 +180,26 @@ export default function GameClient({
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <Header onRestart={handleRestart} />
-      <main className="flex-grow container mx-auto p-4 flex flex-col gap-4">
-        <div className="flex gap-4">
+      <main className="flex-grow container mx-auto p-4 grid grid-cols-3 grid-rows-[auto_1fr] gap-4">
+        <div className="col-span-3 grid grid-cols-2 gap-4">
           <ResourceDashboard indicators={gameState.indicators} />
           <GameBoard boardPosition={gameState.boardPosition} bosses={initialBosses} />
         </div>
-        <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
-          <div className="lg:col-span-1 flex flex-col gap-4">
-              <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
-              <LogPanel logs={logs} />
-          </div>
-          <div className="lg:col-span-2">
-            <DecisionCardComponent
-                card={currentCard}
-                onDecision={handleDecision}
-                isProcessing={isProcessing}
-                currentPlayer={currentPlayer}
-              />
-          </div>
+        
+        <div className="col-span-1 row-start-2 flex flex-col gap-4 min-h-0">
+          <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
+          <LogPanel logs={logs} />
         </div>
+
+        <div className="col-span-2 row-start-2 flex flex-col min-h-0">
+          <DecisionCardComponent
+            card={currentCard}
+            onDecision={handleDecision}
+            isProcessing={isProcessing}
+            currentPlayer={currentPlayer}
+          />
+        </div>
+
       </main>
       <EndGameDialog
         isOpen={gameOver.isGameOver}

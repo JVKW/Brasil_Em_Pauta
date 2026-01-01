@@ -14,16 +14,16 @@ export default function LogPanel({ logs }: LogPanelProps) {
       <CardHeader>
         <CardTitle className="font-headline">Diário da Nação</CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow overflow-hidden">
-        <ScrollArea className="h-full">
-          <div className="space-y-4 pr-4">
-            {logs.slice().reverse().map((log) => (
+      <CardContent className="flex-grow p-0 overflow-hidden">
+        <ScrollArea className="h-full p-6 pt-0">
+          <div className="space-y-4">
+            {logs.map((log) => (
               <div key={log.id} className="text-sm p-2 rounded-md bg-secondary/50">
                 <p className="font-bold">Turno {log.turn}: {log.playerName} ({log.playerRole})</p>
                 <p>Decisão: <span className="text-primary">{log.decision}</span></p>
-                <div className="mt-1">
+                <div className="mt-1 flex flex-wrap gap-1">
                     {log.effects.split(', ').map((effect, index) => (
-                         <Badge key={index} variant="outline" className="mr-1 mb-1 text-xs">{effect}</Badge>
+                         effect && <Badge key={index} variant="outline" className="text-xs">{effect}</Badge>
                     ))}
                 </div>
               </div>

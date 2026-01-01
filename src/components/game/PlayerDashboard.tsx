@@ -7,6 +7,7 @@ import { roleDetails } from "@/lib/game-data";
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { cn } from "@/lib/utils";
 import { Crown, Coins } from "lucide-react";
+import { ScrollArea } from '../ui/scroll-area';
 
 type PlayerDashboardProps = {
   players: Player[];
@@ -15,13 +16,14 @@ type PlayerDashboardProps = {
 
 export default function PlayerDashboard({ players, currentPlayerId }: PlayerDashboardProps) {
   return (
-    <Card className="shadow-lg h-full">
+    <Card className="shadow-lg flex flex-col">
       <CardHeader>
         <CardTitle className="font-headline">Gabinete de Ministros</CardTitle>
         <CardDescription>Os tomadores de decisão da nação.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="flex-grow overflow-hidden">
+        <ScrollArea className="h-full">
+        <div className="space-y-4 pr-4">
           {players.map((player) => {
             const details = roleDetails[player.role];
             const avatarImage = PlaceHolderImages.find(p => p.id === player.avatar);
@@ -48,7 +50,9 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
                         </div>
                       </div>
                       {isCurrentPlayer && (
-                        <Crown className="h-6 w-6 text-primary animate-pulse" aria-label="Jogador atual" />
+                        <div className="relative h-6 w-6">
+                           <Crown className="h-6 w-6 text-primary animate-pulse" aria-label="Jogador atual" />
+                        </div>
                       )}
                     </div>
                   </TooltipTrigger>
@@ -61,6 +65,7 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
             );
           })}
         </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );
