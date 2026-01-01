@@ -17,6 +17,9 @@ export default function LogPanel({ logs }: LogPanelProps) {
       <CardContent className="flex-grow p-0 overflow-hidden">
         <ScrollArea className="h-full p-6 pt-0">
           <div className="space-y-4">
+            {logs.length === 0 && (
+                <p className="text-muted-foreground text-center">Nenhum evento registrado ainda.</p>
+            )}
             {logs.map((log) => (
               <div key={log.id} className="text-sm p-2 rounded-md bg-secondary/50">
                 <p className="font-bold">Turno {log.turn}: {log.playerName} ({log.playerRole})</p>
@@ -28,9 +31,6 @@ export default function LogPanel({ logs }: LogPanelProps) {
                 </div>
               </div>
             ))}
-             {logs.length === 0 && (
-                <p className="text-muted-foreground text-center">Nenhum evento registrado ainda.</p>
-            )}
           </div>
         </ScrollArea>
       </CardContent>
