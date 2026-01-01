@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Ethical Frontier',
-  description: 'A game of governance and ethical decisions.',
+  title: 'Brasil em Pauta',
+  description: 'Um jogo de Governança em Pauta para um Brasil Ético',
 };
 
 export default function RootLayout({

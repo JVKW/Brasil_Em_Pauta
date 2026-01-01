@@ -50,8 +50,8 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
   return (
     <Card className="shadow-2xl border-primary/20 border-2 flex flex-col h-full">
       <CardHeader>
-        <CardTitle className="text-accent font-headline text-2xl">{card.title}</CardTitle>
-        <CardDescription className="text-lg pt-2">{card.dilema}</CardDescription>
+        <CardTitle className="text-accent font-headline text-xl lg:text-2xl">{card.title}</CardTitle>
+        <CardDescription className="text-base lg:text-lg pt-2">{card.dilema}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-3">
         {card.options.map((option) => (
