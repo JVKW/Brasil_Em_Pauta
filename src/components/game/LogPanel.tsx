@@ -10,7 +10,7 @@ type LogPanelProps = {
 
 export default function LogPanel({ logs }: LogPanelProps) {
   return (
-    <Card className="shadow-lg flex-grow flex flex-col min-h-0">
+    <Card className="shadow-lg flex-grow flex flex-col h-full">
       <CardHeader>
         <CardTitle className="font-headline">Diário da Nação</CardTitle>
       </CardHeader>

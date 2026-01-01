@@ -16,7 +16,7 @@ type PlayerDashboardProps = {
 
 export default function PlayerDashboard({ players, currentPlayerId }: PlayerDashboardProps) {
   return (
-    <Card className="shadow-lg flex flex-col">
+    <Card className="shadow-lg flex flex-col h-full">
       <CardHeader>
         <CardTitle className="font-headline">Gabinete de Ministros</CardTitle>
         <CardDescription>Os tomadores de decisão da nação.</CardDescription>

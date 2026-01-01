@@ -48,7 +48,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
   };
   
   return (
-    <Card className="shadow-2xl border-primary/20 border-2 animate-fade-in flex flex-col">
+    <Card className="shadow-2xl border-primary/20 border-2 flex flex-col h-full">
       <CardHeader>
         <CardTitle className="text-accent font-headline text-2xl">{card.title}</CardTitle>
         <CardDescription className="text-lg pt-2">{card.dilema}</CardDescription>
