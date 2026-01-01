@@ -34,9 +34,9 @@ export const initialCards: DecisionCard[] = [
     options: [
       { id: 'c1o1', name: 'Educação para Todos', description: 'Contratar e treinar novos professores com foco em EDH.', effects: [{ indicator: 'education', change: 2 }, { indicator: 'economy', change: -3 }, { board: 'player', change: 2 }], variant: 'default' },
       { id: 'c1o2', name: 'Solução Temporária', description: 'Lançar um programa paliativo com voluntários.', effects: [{ indicator: 'education', change: 1 }, { indicator: 'economy', change: -1 }, { board: 'player', change: 1 }], variant: 'secondary' },
-      { id: 'c1o3', name: 'Ignorar o Problema', description: 'Criar um comitê para "estudar a situação".', effects: [], variant: 'ghost' },
+      { id: 'c1o3', name: 'Análise Burocrática', description: 'Criar um comitê para "estudar a situação".', effects: [], variant: 'ghost' },
       { id: 'c1o4', name: 'Consultoria Fantasma', description: 'Desviar verba da educação para uma "consultoria" de um amigo.', effects: [{ indicator: 'education', change: -2 }, { indicator: 'popularSupport', change: -1 }, { capital: 'player', change: 15 }], variant: 'outline' },
-      { id: 'c1o5', name: 'Marketing Governamental', description: 'Investir em propaganda massiva para melhorar a imagem do governo.', effects: [{ indicator: 'popularSupport', change: 2 }, { indicator: 'education', change: -2 }, { indicator: 'economy', change: -2 }], variant: 'destructive' },
+      { id: 'c1o5', name: 'Propaganda Oficial', description: 'Investir em propaganda massiva para melhorar a imagem do governo.', effects: [{ indicator: 'popularSupport', change: 2 }, { indicator: 'education', change: -2 }, { indicator: 'economy', change: -2 }], variant: 'destructive' },
     ]
   },
   {
@@ -44,11 +44,11 @@ export const initialCards: DecisionCard[] = [
     title: 'Protestos por Alimentos',
     dilema: 'A população protesta por conta da alta no preço dos alimentos. A oposição culpa o governo.',
     options: [
-        { id: 'c2o1', name: 'Soversania Alimentar', description: 'Criar fazendas urbanas e subsidiar pequenos agricultores.', effects: [{ indicator: 'hunger', change: -2 }, { indicator: 'economy', change: -3 }, { indicator: 'wellBeing', change: 1 }, { board: 'player', change: 2 }], variant: 'default' },
+        { id: 'c2o1', name: 'Soberania Alimentar', description: 'Criar fazendas urbanas e subsidiar pequenos agricultores.', effects: [{ indicator: 'hunger', change: -2 }, { indicator: 'economy', change: -3 }, { indicator: 'wellBeing', change: 1 }, { board: 'player', change: 2 }], variant: 'default' },
         { id: 'c2o2', name: 'Importação Emergencial', description: 'Importar alimentos mais baratos temporariamente.', effects: [{ indicator: 'hunger', change: -1 }, { indicator: 'economy', change: -2 }, { board: 'player', change: 1 }], variant: 'secondary' },
-        { id: 'c2o3', name: 'Culpar Fatores Externos', description: 'Dizer que a culpa é da "crise internacional".', effects: [{ indicator: 'popularSupport', change: -1 }], variant: 'ghost' },
+        { id: 'c2o3', name: 'Discurso à Nação', description: 'Dizer que a culpa é da "crise internacional".', effects: [{ indicator: 'popularSupport', change: -1 }], variant: 'ghost' },
         { id: 'c2o4', name: 'Lobby Corporativo', description: 'Aceitar suborno de grandes corporações de alimentos para manter os preços altos.', effects: [{ indicator: 'hunger', change: 2 }, { indicator: 'wellBeing', change: -2 }, { capital: 'player', change: 20 }], variant: 'outline' },
-        { id: 'c2o5', name: 'Repressão Violenta', description: 'Usar a força policial para reprimir os protestos violentamente.', effects: [{ indicator: 'militaryReligion', change: 2 }, { indicator: 'popularSupport', change: -3 }, { indicator: 'wellBeing', change: -2 }], variant: 'destructive' },
+        { id: 'c2o5', name: 'Repressão aos Protestos', description: 'Usar a força policial para reprimir os protestos violentamente.', effects: [{ indicator: 'militaryReligion', change: 2 }, { indicator: 'popularSupport', change: -3 }, { indicator: 'wellBeing', change: -2 }], variant: 'destructive' },
     ]
   }
 ];

@@ -30,7 +30,7 @@ const EffectIcon = ({ effect }: { effect: string }) => {
 
 export default function DecisionCardComponent({ card, onDecision, isProcessing, currentPlayer }: DecisionCardProps) {
   const playerRole = roleDetails[currentPlayer.role];
-
+  
   const getEffectText = (option: DecisionOption): string[] => {
     return option.effects.map(effect => {
       if ('indicator' in effect) {
@@ -48,28 +48,29 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
   };
   
   return (
-    <Card className="shadow-2xl border-primary/20 border-2 flex flex-col h-full">
-      <CardHeader>
-        <CardTitle className="text-accent font-headline text-xl lg:text-2xl">{card.title}</CardTitle>
-        <CardDescription className="text-base lg:text-lg pt-2">{card.dilema}</CardDescription>
+    <Card className="shadow-2xl border-primary/20 bg-card/80 backdrop-blur-sm border-2 flex flex-col h-full overflow-hidden">
+      <CardHeader className="flex-shrink-0">
+        <CardTitle className="text-accent font-headline text-2xl lg:text-3xl">{card.title}</CardTitle>
+        <CardDescription className="text-base lg:text-lg pt-2 text-foreground/80">{card.dilema}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-3">
+      <CardContent className="flex-grow flex flex-col gap-3 justify-center overflow-y-auto p-4">
         {card.options.map((option) => (
           <TooltipProvider key={option.id}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-full h-full">
+                <div className="w-full">
                   <Button
                     variant={option.variant}
-                    className="w-full h-full text-base py-3 justify-start text-left whitespace-normal leading-snug flex flex-col items-start"
+                    className="w-full h-auto min-h-[4rem] text-base py-3 justify-start text-left whitespace-normal leading-snug flex flex-col items-start"
                     onClick={() => onDecision(option)}
                     disabled={isProcessing}
                   >
-                    <div className="w-full flex justify-between items-center">
-                      <span className="font-bold">{option.name}</span>
-                       {isProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    <div className="w-full flex justify-between items-center mb-2">
+                      <span className="font-bold text-lg">{option.name}</span>
+                       {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
+                    <p className="text-sm text-left font-normal text-foreground/70 w-full mb-2">{option.description}</p>
+                    <div className="flex flex-wrap gap-2">
                       {getEffectText(option).map((text, i) => (
                         <Badge key={i} variant="secondary" className="flex items-center gap-1 text-xs">
                           <EffectIcon effect={text} />
@@ -87,7 +88,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
           </TooltipProvider>
         ))}
       </CardContent>
-       <CardFooter>
+       <CardFooter className="flex-shrink-0">
         <p className="text-sm text-muted-foreground w-full text-center">
             É a vez de <span className="font-bold text-primary">{currentPlayer.name}</span> ({playerRole.name}) tomar uma decisão.
         </p>
