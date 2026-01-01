@@ -16,14 +16,14 @@ type PlayerDashboardProps = {
 
 export default function PlayerDashboard({ players, currentPlayerId }: PlayerDashboardProps) {
   return (
-    <Card className="shadow-lg flex flex-col h-full">
+    <Card className="shadow-lg flex flex-col h-full overflow-hidden">
       <CardHeader>
-        <CardTitle>Gabinete de Ministros</CardTitle>
+        <CardTitle className="font-headline">Gabinete de Ministros</CardTitle>
         <CardDescription>Os tomadores de decisão da nação.</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow overflow-hidden">
-        <ScrollArea className="h-full">
-        <div className="space-y-4 pr-4">
+      <CardContent className="flex-1 p-0 overflow-hidden">
+        <ScrollArea className="h-full p-4 pt-0">
+        <div className="space-y-4">
           {players.map((player) => {
             const details = roleDetails[player.role];
             const avatarImage = PlaceHolderImages.find(p => p.id === player.avatar);

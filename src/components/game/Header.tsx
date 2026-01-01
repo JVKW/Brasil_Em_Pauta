@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Gamepad2, RotateCcw } from "lucide-react";
+import { Scale, RotateCcw } from "lucide-react";
 
 type HeaderProps = {
   onRestart: () => void;
@@ -13,9 +13,9 @@ export default function Header({ onRestart }: HeaderProps) {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
-            <Gamepad2 className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Ethical Frontier
+            <Scale className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-foreground font-headline">
+              Brasil em Pauta
             </h1>
           </div>
           <Button variant="outline" size="sm" onClick={onRestart}>

@@ -10,21 +10,21 @@ type LogPanelProps = {
 
 export default function LogPanel({ logs }: LogPanelProps) {
   return (
-    <Card className="shadow-lg flex-grow flex flex-col h-full">
+    <Card className="shadow-lg flex flex-col h-full overflow-hidden">
       <CardHeader>
-        <CardTitle>Diário da Nação</CardTitle>
+        <CardTitle className="font-headline">Diário da Nação</CardTitle>
       </CardHeader>
-      <CardContent className="flex-grow p-0 overflow-hidden">
-        <ScrollArea className="h-full p-6 pt-0">
+      <CardContent className="flex-1 p-0 overflow-hidden">
+        <ScrollArea className="h-full p-4 pt-0">
           <div className="space-y-4">
             {logs.length === 0 && (
                 <p className="text-muted-foreground text-center">Nenhum evento registrado ainda.</p>
             )}
             {logs.map((log) => (
-              <div key={log.id} className="text-sm p-2 rounded-md bg-secondary/50">
-                <p className="font-bold">Turno {log.turn}: {log.playerName} ({log.playerRole})</p>
-                <p>Decisão: <span className="text-primary">{log.decision}</span></p>
-                <div className="mt-1 flex flex-wrap gap-1">
+              <div key={log.id} className="text-sm p-3 rounded-lg bg-secondary/50 border border-border/50">
+                <p className="font-bold">Turno {log.turn}: {log.playerName} <span className="font-normal text-muted-foreground">({log.playerRole})</span></p>
+                <p>Decisão: <span className="text-primary font-semibold">{log.decision}</span></p>
+                <div className="mt-2 flex flex-wrap gap-1">
                     {log.effects.split(', ').map((effect, index) => (
                          effect && <Badge key={index} variant="outline" className="text-xs">{effect}</Badge>
                     ))}

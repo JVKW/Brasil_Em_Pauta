@@ -20,9 +20,14 @@ type GameClientProps = {
   initialBosses: Boss[];
 };
 
-const getRandomCard = (cards: DecisionCard[]) => {
-    return cards[Math.floor(Math.random() * cards.length)];
+const getRandomCard = (cards: DecisionCard[], currentCardId?: string): DecisionCard => {
+  const availableCards = cards.filter(c => c.id !== currentCardId);
+  if (availableCards.length === 0) {
+    return cards[0];
+  }
+  return availableCards[Math.floor(Math.random() * availableCards.length)];
 };
+
 
 export default function GameClient({
   initialGameState,
@@ -177,23 +182,23 @@ export default function GameClient({
       setTurn(t => t + 1);
     }
     setCurrentPlayerIndex(nextPlayerIndex);
-    setCurrentCard(getRandomCard(initialCards));
+    setCurrentCard(getRandomCard(initialCards, currentCard.id));
     setIsProcessing(false);
-  }, [gameState, players, currentPlayer, currentPlayerIndex, initialBosses, initialCards, isProcessing, toast, turn]);
+  }, [gameState, players, currentPlayer, currentPlayerIndex, initialBosses, initialCards, isProcessing, toast, turn, currentCard]);
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <Header onRestart={handleRestart} />
-      <main className="flex-grow container mx-auto p-4 flex flex-col gap-4 overflow-hidden">
+      <main className="flex-1 container mx-auto px-4 py-2 flex flex-col gap-4 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ResourceDashboard indicators={gameState.indicators} />
           <GameBoard boardPosition={gameState.boardPosition} bosses={initialBosses} />
         </div>
-        <div className="flex-grow grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden min-h-0">
-          <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
+          <div className="lg:col-span-3 flex flex-col overflow-hidden">
             <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
           </div>
-          <div className="lg:col-span-6 flex flex-col h-full overflow-hidden min-h-0">
+          <div className="lg:col-span-6 flex flex-col overflow-hidden">
             <DecisionCardComponent
               card={currentCard}
               onDecision={handleDecision}
@@ -201,7 +206,7 @@ export default function GameClient({
               currentPlayer={currentPlayer}
             />
           </div>
-          <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
+          <div className="lg:col-span-3 flex flex-col overflow-hidden">
             <LogPanel logs={logs} />
           </div>
         </div>
