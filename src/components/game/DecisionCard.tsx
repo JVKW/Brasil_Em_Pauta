@@ -50,10 +50,10 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
   return (
     <Card className="shadow-2xl border-primary/20 bg-card/80 backdrop-blur-sm border-2 flex flex-col h-full overflow-hidden">
       <CardHeader className="flex-shrink-0">
-        <CardTitle className="text-accent font-headline text-2xl lg:text-3xl">{card.title}</CardTitle>
+        <CardTitle className="text-accent text-2xl lg:text-3xl">{card.title}</CardTitle>
         <CardDescription className="text-base lg:text-lg pt-2 text-foreground/80">{card.dilema}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col gap-3 justify-center overflow-y-auto p-4">
+      <CardContent className="flex-grow flex flex-col gap-3 justify-center p-4">
         {card.options.map((option) => (
           <TooltipProvider key={option.id}>
             <Tooltip>

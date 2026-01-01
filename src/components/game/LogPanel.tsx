@@ -12,7 +12,7 @@ export default function LogPanel({ logs }: LogPanelProps) {
   return (
     <Card className="shadow-lg flex-grow flex flex-col h-full">
       <CardHeader>
-        <CardTitle className="font-headline">Diário da Nação</CardTitle>
+        <CardTitle>Diário da Nação</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow p-0 overflow-hidden">
         <ScrollArea className="h-full p-6 pt-0">

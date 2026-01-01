@@ -11,7 +11,7 @@ export default function ResourceDashboard({ indicators }: ResourceDashboardProps
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline">Painel de Controle da Nação</CardTitle>
+        <CardTitle>Painel de Controle da Nação</CardTitle>
         <CardDescription>Indicadores chave do progresso social.</CardDescription>
       </CardHeader>
       <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">

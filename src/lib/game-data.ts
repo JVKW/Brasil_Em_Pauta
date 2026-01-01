@@ -1,5 +1,6 @@
 import type { Player, Role, DecisionCard, Boss, GameState, RoleDetails, Indicator } from './types';
 import { Landmark, GraduationCap, Tractor, HandHelping, Megaphone, ShieldCheck, BookOpen, Heart, Users, Soup, Shield } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 export const roleDetails: Record<Role, RoleDetails> = {
   ministerOfEducation: { name: 'Ministro da Educação', description: 'Efeito dobrado em ações para Educação.', icon: GraduationCap },

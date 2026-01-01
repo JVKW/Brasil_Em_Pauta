@@ -18,7 +18,7 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
   return (
     <Card className="shadow-lg flex flex-col h-full">
       <CardHeader>
-        <CardTitle className="font-headline">Gabinete de Ministros</CardTitle>
+        <CardTitle>Gabinete de Ministros</CardTitle>
         <CardDescription>Os tomadores de decisão da nação.</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden">
