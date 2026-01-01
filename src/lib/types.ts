@@ -65,3 +65,12 @@ export type RoleDetails = {
   description: string;
   icon: LucideIcon;
 };
+
+export type LogEntry = {
+  id: number;
+  turn: number;
+  playerName: string;
+  playerRole: string;
+  decision: string;
+  effects: string;
+};

@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { DecisionCard, DecisionOption, Player } from "@/lib/types";
-import { roleDetails } from "@/lib/game-data";
-import { Loader2 } from "lucide-react";
+import type { DecisionCard, DecisionOption, Player, Indicator } from "@/lib/types";
+import { roleDetails, indicatorDetails } from "@/lib/game-data";
+import { Loader2, ArrowUp, ArrowDown, Coins, HelpCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 type DecisionCardProps = {
   card: DecisionCard;
@@ -12,29 +13,70 @@ type DecisionCardProps = {
   currentPlayer: Player;
 };
 
+const EffectIcon = ({ effect }: { effect: string }) => {
+  if (effect.includes('Capital')) return <Coins className="h-3 w-3 text-amber-400" />;
+  if (effect.includes('Progresso')) return <ArrowUp className="h-3 w-3 text-green-400" />;
+  
+  const indicatorKey = Object.keys(indicatorDetails).find(key => effect.includes(indicatorDetails[key as Indicator].name));
+  if (indicatorKey) {
+    const Icon = indicatorDetails[indicatorKey as Indicator].icon;
+    const isPositive = !effect.includes('-');
+    return <Icon className={`h-3 w-3 ${isPositive ? 'text-green-400' : 'text-red-400'}`} />;
+  }
+
+  return <HelpCircle className="h-3 w-3" />;
+};
+
+
 export default function DecisionCardComponent({ card, onDecision, isProcessing, currentPlayer }: DecisionCardProps) {
   const playerRole = roleDetails[currentPlayer.role];
+
+  const getEffectText = (option: DecisionOption): string[] => {
+    return option.effects.map(effect => {
+      if ('indicator' in effect) {
+        const indicatorName = indicatorDetails[effect.indicator].name;
+        return `${indicatorName} ${effect.change > 0 ? '+' : ''}${effect.change}`;
+      }
+      if ('capital' in effect) {
+        return `Capital ${effect.change > 0 ? '+' : ''}${effect.change}`;
+      }
+      if ('board' in effect) {
+        return `Progresso ${effect.change > 0 ? '+' : ''}${effect.change}`;
+      }
+      return '';
+    }).filter(Boolean);
+  };
   
   return (
-    <Card className="shadow-2xl border-primary/20 border-2 animate-fade-in">
+    <Card className="shadow-2xl border-primary/20 border-2 animate-fade-in flex flex-col">
       <CardHeader>
         <CardTitle className="text-accent font-headline text-2xl">{card.title}</CardTitle>
         <CardDescription className="text-lg pt-2">{card.dilema}</CardDescription>
       </CardHeader>
-      <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <CardContent className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-3">
         {card.options.map((option) => (
           <TooltipProvider key={option.id}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-full">
+                <div className="w-full h-full">
                   <Button
                     variant={option.variant}
-                    className="w-full h-full text-base py-3 justify-start text-left whitespace-normal leading-snug"
+                    className="w-full h-full text-base py-3 justify-start text-left whitespace-normal leading-snug flex flex-col items-start"
                     onClick={() => onDecision(option)}
                     disabled={isProcessing}
                   >
-                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {option.name}
+                    <div className="w-full flex justify-between items-center">
+                      <span className="font-bold">{option.name}</span>
+                       {isProcessing && <Loader2 className="h-4 w-4 animate-spin" />}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {getEffectText(option).map((text, i) => (
+                        <Badge key={i} variant="secondary" className="flex items-center gap-1 text-xs">
+                          <EffectIcon effect={text} />
+                          {text}
+                        </Badge>
+                      ))}
+                    </div>
                   </Button>
                 </div>
               </TooltipTrigger>

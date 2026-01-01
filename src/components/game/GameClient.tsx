@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { GameState, Player, DecisionCard, Boss, DecisionOption } from '@/lib/types';
+import React, { useState, useCallback, useMemo } from 'react';
+import type { GameState, Player, DecisionCard, Boss, DecisionOption, LogEntry } from '@/lib/types';
 import { checkWinConditionsAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import ResourceDashboard from './ResourceDashboard';
@@ -8,10 +8,10 @@ import PlayerDashboard from './PlayerDashboard';
 import GameBoard from './GameBoard';
 import DecisionCardComponent from './DecisionCard';
 import EndGameDialog from './EndGameDialog';
-import { roleDetails } from '@/lib/game-data';
+import { roleDetails, indicatorDetails } from '@/lib/game-data';
 import Header from './Header';
 import { Crown, Swords } from 'lucide-react';
-import { Card } from '../ui/card';
+import LogPanel from './LogPanel';
 
 type GameClientProps = {
   initialGameState: GameState;
@@ -32,9 +32,15 @@ export default function GameClient({
   const [currentCard, setCurrentCard] = useState<DecisionCard>(initialCards[0]);
   const [gameOver, setGameOver] = useState({ isGameOver: false, message: '' });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [turn, setTurn] = useState(1);
   const { toast } = useToast();
 
   const currentPlayer = useMemo(() => players[currentPlayerIndex], [players, currentPlayerIndex]);
+
+  const addLog = (log: Omit<LogEntry, 'id'>) => {
+    setLogs(prevLogs => [...prevLogs, { ...log, id: prevLogs.length }]);
+  };
 
   const handleRestart = () => {
     setGameState(initialGameState);
@@ -42,6 +48,8 @@ export default function GameClient({
     setCurrentPlayerIndex(0);
     setCurrentCard(initialCards[Math.floor(Math.random() * initialCards.length)]);
     setGameOver({ isGameOver: false, message: '' });
+    setLogs([]);
+    setTurn(1);
     toast({ title: "Jogo Reiniciado", description: "Uma nova partida começou." });
   };
 
@@ -55,8 +63,12 @@ export default function GameClient({
     const playerRole = player.role;
     
     let boardChange = 0;
+    const effectsDescriptions: string[] = [];
 
     option.effects.forEach(effect => {
+      let valueChange: number | undefined;
+      let indicatorName: string | undefined;
+
       if ('indicator' in effect) {
         let change = effect.change;
         if (playerRole === 'ministerOfEducation' && effect.indicator === 'education' && change > 0) change *= 2;
@@ -74,13 +86,33 @@ export default function GameClient({
         } else {
              newGameState.indicators[effect.indicator] = Math.max(0, newGameState.indicators[effect.indicator]);
         }
+        valueChange = change;
+        indicatorName = indicatorDetails[effect.indicator].name;
+
       } else if ('capital' in effect) {
         let change = effect.change;
         if(playerRole === 'economyManager' && change > 0) change = Math.ceil(change * 1.5);
         player.capital += change;
+        valueChange = change;
+        indicatorName = 'Capital';
+
       } else if ('board' in effect) {
         boardChange += effect.change;
+        valueChange = effect.change;
+        indicatorName = 'Progresso';
       }
+
+      if(indicatorName && valueChange !== undefined) {
+        effectsDescriptions.push(`${indicatorName} ${valueChange > 0 ? '+' : ''}${valueChange}`);
+      }
+    });
+    
+    addLog({
+      turn,
+      playerName: currentPlayer.name,
+      playerRole: roleDetails[currentPlayer.role].name,
+      decision: option.name,
+      effects: effectsDescriptions.join(', ') || "Nenhum efeito."
     });
 
     newGameState.boardPosition = Math.min(20, newGameState.boardPosition + boardChange);
@@ -92,7 +124,7 @@ export default function GameClient({
         toast({
           variant: "destructive",
           title: "Progresso Bloqueado!",
-          description: `O progresso da nação foi barrado por "${bossOnCurrentTile.name}". O indicador de ${bossOnCurrentTile.requirement.indicator} precisa ser no mínimo ${bossOnCurrentTile.requirement.level}.`,
+          description: `O progresso da nação foi barrado por "${bossOnCurrentTile.name}". O indicador de ${indicatorDetails[bossOnCurrentTile.requirement.indicator].name} precisa ser no mínimo ${bossOnCurrentTile.requirement.level}.`,
           icon: <Swords className="h-6 w-6 text-destructive-foreground" />,
         });
       } else {
@@ -114,22 +146,29 @@ export default function GameClient({
       return;
     }
 
-    setCurrentPlayerIndex((prevIndex) => (prevIndex + 1) % newPlayers.length);
+    const nextPlayerIndex = (currentPlayerIndex + 1) % newPlayers.length;
+    if (nextPlayerIndex === 0) {
+      setTurn(t => t + 1);
+    }
+    setCurrentPlayerIndex(nextPlayerIndex);
     setCurrentCard(initialCards[Math.floor(Math.random() * initialCards.length)]);
     setIsProcessing(false);
-  }, [gameState, players, currentPlayerIndex, initialBosses, initialCards, isProcessing, toast]);
+  }, [gameState, players, currentPlayer, currentPlayerIndex, initialBosses, initialCards, isProcessing, toast, turn]);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <Header onRestart={handleRestart} />
-      <main className="flex-grow container mx-auto p-4 md:p-6 lg:p-8">
-        <ResourceDashboard indicators={gameState.indicators} />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 mt-6 lg:mt-8">
-          <div className="lg:col-span-1">
-            <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
+      <main className="flex-grow container mx-auto p-4 flex flex-col gap-4">
+        <div className="flex gap-4">
+          <ResourceDashboard indicators={gameState.indicators} />
+          <GameBoard boardPosition={gameState.boardPosition} bosses={initialBosses} />
+        </div>
+        <div className="flex-grow grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
+          <div className="lg:col-span-1 flex flex-col gap-4">
+              <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
+              <LogPanel logs={logs} />
           </div>
-          <div className="lg:col-span-2 space-y-6 lg:space-y-8">
-            <GameBoard boardPosition={gameState.boardPosition} bosses={initialBosses} />
+          <div className="lg:col-span-2">
             <DecisionCardComponent
                 card={currentCard}
                 onDecision={handleDecision}
