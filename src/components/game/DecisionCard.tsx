@@ -52,7 +52,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
         <CardTitle className="text-accent font-headline text-2xl lg:text-3xl">{card.title}</CardTitle>
         <CardDescription className="text-base lg:text-lg pt-2 text-foreground/80">{card.dilema}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow flex flex-col gap-3 justify-center p-4">
+      <CardContent className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
         {card.options.map((option) => (
             <div key={option.id} className="w-full flex-1">
               <Button
