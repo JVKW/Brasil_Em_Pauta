@@ -180,30 +180,31 @@ export default function GameClient({
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <Header onRestart={handleRestart} />
-      <main className="flex-grow container mx-auto p-4 grid grid-cols-12 grid-rows-[auto_1fr] gap-4 h-full">
+      <main className="flex-grow container mx-auto p-4 flex flex-col gap-4">
         
-        <div className="col-span-12 grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <ResourceDashboard indicators={gameState.indicators} />
           <GameBoard boardPosition={gameState.boardPosition} bosses={initialBosses} />
         </div>
         
-        <div className="col-span-3 row-start-2 flex flex-col gap-4 min-h-0">
-          <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
-        </div>
+        <div className="flex-grow grid grid-cols-12 gap-4 min-h-0">
+          <div className="col-span-3 flex flex-col gap-4">
+            <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
+          </div>
 
-        <div className="col-span-6 row-start-2 flex flex-col min-h-0">
-          <DecisionCardComponent
-            card={currentCard}
-            onDecision={handleDecision}
-            isProcessing={isProcessing}
-            currentPlayer={currentPlayer}
-          />
-        </div>
+          <div className="col-span-6 flex flex-col">
+            <DecisionCardComponent
+              card={currentCard}
+              onDecision={handleDecision}
+              isProcessing={isProcessing}
+              currentPlayer={currentPlayer}
+            />
+          </div>
 
-        <div className="col-span-3 row-start-2 flex flex-col gap-4 min-h-0">
-          <LogPanel logs={logs} />
+          <div className="col-span-3 flex flex-col gap-4">
+            <LogPanel logs={logs} />
+          </div>
         </div>
-
       </main>
       <EndGameDialog
         isOpen={gameOver.isGameOver}
