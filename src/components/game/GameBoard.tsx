@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { Boss } from "@/lib/types";
+import type { Boss, Indicator } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Flag, Gem, Shield, Star } from "lucide-react";
+import { indicatorDetails } from "@/lib/game-data";
 
 type GameBoardProps = {
   boardPosition: number;
@@ -41,13 +42,13 @@ export default function GameBoard({ boardPosition, bosses }: GameBoardProps) {
                           "relative h-8 w-8 rounded-full flex items-center justify-center border-2 transition-all duration-300",
                           isCurrentPosition ? "bg-primary border-primary scale-125 shadow-lg" : "bg-card",
                           isPassed ? "border-primary/50" : "border-border",
-                          boss && !isPassed && "border-destructive"
+                          boss && !isPassed && "border-destructive border-4 ring-4 ring-destructive/30"
                         )}
                         style={{ zIndex: isCurrentPosition ? 10 : 1 }}
                       >
                         {Icon ? (
                           <Icon className={cn(
-                            "h-4 w-4",
+                            "h-5 w-5",
                             isCurrentPosition ? "text-primary-foreground" : "text-muted-foreground",
                             isPassed && "text-primary/70",
                             boss && !isPassed && "text-destructive"
@@ -60,7 +61,7 @@ export default function GameBoard({ boardPosition, bosses }: GameBoardProps) {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Casa {step}</p>
-                      {boss && <p className="font-bold text-destructive">Chefe: {boss.name}</p>}
+                      {boss && <p className="font-bold text-destructive">Chefe: {boss.name} (Requer {indicatorDetails[boss.requirement.indicator as Indicator].name} {`>= ${boss.requirement.level}`})</p>}
                       {step === TOTAL_STEPS && <p className="font-bold text-amber-500">Justiça Social!</p>}
                     </TooltipContent>
                   </Tooltip>

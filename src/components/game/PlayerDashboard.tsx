@@ -18,12 +18,11 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
   return (
     <Card className="shadow-lg flex flex-col h-full overflow-hidden">
       <CardHeader>
-        <CardTitle className="font-headline">Gabinete de Ministros</CardTitle>
-        <CardDescription>Os tomadores de decisão da nação.</CardDescription>
+        <CardTitle className="font-headline">Gabinete</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 p-0 overflow-hidden">
-        <ScrollArea className="h-full p-4 pt-0">
-        <div className="space-y-4">
+        <ScrollArea className="h-full p-2 pt-0">
+        <div className="space-y-2">
           {players.map((player) => {
             const details = roleDetails[player.role];
             const avatarImage = PlaceHolderImages.find(p => p.id === player.avatar);
@@ -34,24 +33,24 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className={cn(
-                      "flex items-center space-x-4 p-3 rounded-lg border transition-all",
-                      isCurrentPlayer ? "bg-primary/10 border-primary shadow-md" : "bg-card"
+                      "flex items-center space-x-3 p-2 rounded-lg border transition-all",
+                      isCurrentPlayer ? "bg-primary/20 border-primary shadow-md border-2" : "bg-card/50"
                     )}>
-                      <Avatar className="h-12 w-12 border-2 border-primary/20">
+                      <Avatar className="h-10 w-10 border-2 border-primary/20">
                         {avatarImage && <AvatarImage src={avatarImage.imageUrl} alt={player.name} data-ai-hint={avatarImage.imageHint} />}
                         <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <div className="flex-grow">
-                        <p className="text-sm font-bold text-foreground">{player.name}</p>
-                        <p className="text-xs text-muted-foreground">{details.name}</p>
-                         <div className="flex items-center text-sm mt-1">
-                            <Coins className="h-4 w-4 mr-1.5 text-amber-500" />
+                      <div className="flex-grow overflow-hidden">
+                        <p className="text-sm font-bold text-foreground truncate">{player.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{details.name}</p>
+                         <div className="flex items-center text-xs mt-1">
+                            <Coins className="h-3 w-3 mr-1 text-amber-500" />
                             <span className="font-semibold">{player.capital}</span>
                         </div>
                       </div>
                       {isCurrentPlayer && (
-                        <div className="relative h-6 w-6">
-                           <Crown className="h-6 w-6 text-primary animate-pulse" aria-label="Jogador atual" />
+                        <div className="relative h-5 w-5 flex-shrink-0">
+                           <Crown className="h-5 w-5 text-accent animate-pulse" aria-label="Jogador atual" />
                         </div>
                       )}
                     </div>

@@ -10,11 +10,10 @@ type ResourceDashboardProps = {
 export default function ResourceDashboard({ indicators }: ResourceDashboardProps) {
   return (
     <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle>Painel de Controle da Nação</CardTitle>
-        <CardDescription>Indicadores chave do progresso social.</CardDescription>
+      <CardHeader className="pb-2">
+        <CardTitle>Painel da Nação</CardTitle>
       </CardHeader>
-      <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+      <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
         {Object.entries(indicators).map(([key, value]) => {
           const details = indicatorDetails[key as keyof typeof indicatorDetails];
           return (

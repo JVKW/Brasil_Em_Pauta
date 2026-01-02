@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DecisionCard, DecisionOption, Player, Indicator } from "@/lib/types";
 import { roleDetails, indicatorDetails } from "@/lib/game-data";
-import { Loader2, ArrowUp, Coins, HelpCircle } from "lucide-react";
+import { Loader2, ArrowUp, Coins, HelpCircle, ArrowDown, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 type DecisionCardProps = {
@@ -12,14 +12,19 @@ type DecisionCardProps = {
   currentPlayer: Player;
 };
 
-const EffectIcon = ({ effect }: { effect: string }) => {
-  if (effect.includes('Capital')) return <Coins className="h-3 w-3 text-amber-400" />;
-  if (effect.includes('Progresso')) return <ArrowUp className="h-3 w-3 text-green-400" />;
+const EffectIcon = ({ effectType, change }: { effectType: string, change: number }) => {
+  const isPositive = change > 0;
   
-  const indicatorKey = Object.keys(indicatorDetails).find(key => effect.includes(indicatorDetails[key as Indicator].name));
+  if (effectType === 'capital') return <Coins className="h-3 w-3 text-amber-400" />;
+  if (effectType === 'board') return <ArrowUp className="h-3 w-3 text-green-400" />;
+  
+  const indicatorKey = Object.keys(indicatorDetails).find(key => indicatorDetails[key as Indicator].name.toLowerCase().includes(effectType.toLowerCase()));
+  
   if (indicatorKey) {
     const Icon = indicatorDetails[indicatorKey as Indicator].icon;
-    const isPositive = !effect.includes('-');
+    if (indicatorKey === 'hunger') {
+       return <Icon className={`h-3 w-3 ${isPositive ? 'text-red-400' : 'text-green-400'}`} />;
+    }
     return <Icon className={`h-3 w-3 ${isPositive ? 'text-green-400' : 'text-red-400'}`} />;
   }
 
@@ -27,24 +32,24 @@ const EffectIcon = ({ effect }: { effect: string }) => {
 };
 
 
-export default function DecisionCardComponent({ card, onDecision, isProcessing, currentPlayer }: DecisionCardProps) {
-  const playerRole = roleDetails[currentPlayer.role];
-  
-  const getEffectText = (option: DecisionOption): string[] => {
+const getEffectText = (option: DecisionOption): {text: string, type: string, change: number}[] => {
     return option.effects.map(effect => {
       if ('indicator' in effect) {
         const indicatorName = indicatorDetails[effect.indicator].name;
-        return `${indicatorName} ${effect.change > 0 ? '+' : ''}${effect.change}`;
+        return { text: `${indicatorName} ${effect.change > 0 ? '+' : ''}${effect.change}`, type: indicatorName, change: effect.change };
       }
       if ('capital' in effect) {
-        return `Capital ${effect.change > 0 ? '+' : ''}${effect.change}`;
+        return { text: `Capital ${effect.change > 0 ? '+' : ''}${effect.change}`, type: 'capital', change: effect.change };
       }
       if ('board' in effect) {
-        return `Progresso ${effect.change > 0 ? '+' : ''}${effect.change}`;
+        return { text: `Progresso ${effect.change > 0 ? '+' : ''}${effect.change}`, type: 'board', change: effect.change };
       }
-      return '';
-    }).filter(Boolean);
+      return {text: '', type: 'unknown', change: 0};
+    }).filter(e => e.text);
   };
+
+export default function DecisionCardComponent({ card, onDecision, isProcessing, currentPlayer }: DecisionCardProps) {
+  const playerRole = roleDetails[currentPlayer.role];
   
   return (
     <Card className="shadow-2xl border-primary/20 bg-card/80 backdrop-blur-sm border-2 flex flex-col h-full overflow-hidden">
@@ -66,11 +71,11 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
                     {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
                 </div>
                 <p className="text-sm text-left font-normal text-foreground/70 w-full flex-grow">{option.description}</p>
-                <div className="flex flex-wrap gap-2 mt-auto">
-                  {getEffectText(option).map((text, i) => (
-                    <Badge key={i} variant="secondary" className="flex items-center gap-1 text-xs">
-                      <EffectIcon effect={text} />
-                      {text}
+                 <div className="flex flex-wrap gap-x-3 gap-y-1 mt-auto pt-2">
+                  {getEffectText(option).map((effect, i) => (
+                    <Badge key={i} variant="secondary" className="flex items-center gap-1.5 text-xs">
+                      <EffectIcon effectType={effect.type} change={effect.change} />
+                      <span>{effect.text}</span>
                     </Badge>
                   ))}
                 </div>
