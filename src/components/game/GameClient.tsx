@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import type { GameState, Player, DecisionCard, Boss, DecisionOption, LogEntry } from '@/lib/types';
 import { checkWinConditionsAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -38,12 +38,16 @@ export default function GameClient({
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [players, setPlayers] = useState<Player[]>(initialPlayers);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-  const [currentCard, setCurrentCard] = useState<DecisionCard>(getRandomCard(initialCards));
+  const [currentCard, setCurrentCard] = useState<DecisionCard>(initialCards[0]);
   const [gameOver, setGameOver] = useState({ isGameOver: false, message: '' });
   const [isProcessing, setIsProcessing] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [turn, setTurn] = useState(1);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setCurrentCard(getRandomCard(initialCards));
+  }, [initialCards]);
 
   const currentPlayer = useMemo(() => players[currentPlayerIndex], [players, currentPlayerIndex]);
 
@@ -189,12 +193,12 @@ export default function GameClient({
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <Header onRestart={handleRestart} />
-      <main className="flex-1 container mx-auto px-4 py-2 flex flex-col gap-4 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <main className="flex-1 container mx-auto px-4 py-2 flex flex-col gap-2 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
           <ResourceDashboard indicators={gameState.indicators} />
           <GameBoard boardPosition={gameState.boardPosition} bosses={initialBosses} />
         </div>
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
           <div className="lg:col-span-3 flex flex-col overflow-hidden">
             <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
           </div>
