@@ -18,12 +18,12 @@ const PatchedProgress = React.forwardRef<
     <Progress
         ref={ref}
         className={className}
-        value={value}
+        value={(value || 0) * 10} // Convert 0-10 scale to 0-100 for progress bar
         {...props}
     >
         <ProgressIndicator
             className={cn("h-full w-full flex-1 bg-primary transition-all", indicatorClassName)}
-            style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
+            style={{ transform: `translateX(-${100 - ((value || 0) * 10)}%)` }}
         />
     </Progress>
 ));
@@ -31,7 +31,7 @@ PatchedProgress.displayName = 'Progress';
 
 
 export default function IndicatorBar({ label, value, Icon, isInverse = false }: IndicatorBarProps) {
-  const displayValue = Math.round(value * 10);
+  const displayValue = Math.round(value);
   const progressColor = isInverse
     ? value >= 8 ? 'bg-red-500' : value >= 5 ? 'bg-yellow-500' : 'bg-green-500'
     : value <= 2 ? 'bg-red-500' : value <= 5 ? 'bg-yellow-500' : 'bg-green-500';
@@ -52,7 +52,7 @@ export default function IndicatorBar({ label, value, Icon, isInverse = false }: 
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p>{label}: {displayValue}/100</p>
+          <p>{label}: {displayValue}/10</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
