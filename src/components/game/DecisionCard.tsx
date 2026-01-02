@@ -48,7 +48,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
   
   return (
     <Card className="shadow-2xl border-primary/20 bg-card/80 backdrop-blur-sm border-2 flex flex-col h-full overflow-hidden">
-      <CardHeader className="flex-shrink-0">
+      <CardHeader>
         <CardTitle className="text-accent font-headline text-2xl lg:text-3xl">{card.title}</CardTitle>
         <CardDescription className="text-base lg:text-lg pt-2 text-foreground/80">{card.dilema}</CardDescription>
       </CardHeader>
@@ -65,7 +65,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
                   <span className="font-bold text-lg">{option.name}</span>
                     {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
                 </div>
-                <p className="text-sm text-left font-normal text-foreground/70 w-full mb-2 flex-grow">{option.description}</p>
+                <p className="text-sm text-left font-normal text-foreground/70 w-full flex-grow">{option.description}</p>
                 <div className="flex flex-wrap gap-2 mt-auto">
                   {getEffectText(option).map((text, i) => (
                     <Badge key={i} variant="secondary" className="flex items-center gap-1 text-xs">
