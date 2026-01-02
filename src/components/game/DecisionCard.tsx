@@ -54,7 +54,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
       </CardHeader>
       <CardContent className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
         {card.options.map((option) => (
-            <div key={option.id} className="w-full flex-1">
+            <div key={option.id} className="w-full flex">
               <Button
                 variant={option.variant}
                 className="w-full h-full text-base py-3 justify-start text-left whitespace-normal leading-snug flex flex-col items-start"
@@ -66,7 +66,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
                     {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
                 </div>
                 <p className="text-sm text-left font-normal text-foreground/70 w-full mb-2 flex-grow">{option.description}</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mt-auto">
                   {getEffectText(option).map((text, i) => (
                     <Badge key={i} variant="secondary" className="flex items-center gap-1 text-xs">
                       <EffectIcon effect={text} />
