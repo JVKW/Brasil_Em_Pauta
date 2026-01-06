@@ -4,6 +4,7 @@ import type { DecisionCard, DecisionOption, Player, Indicator } from "@/lib/type
 import { roleDetails, indicatorDetails } from "@/lib/game-data";
 import { Loader2, ArrowUp, Coins, HelpCircle, ArrowDown, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 type DecisionCardProps = {
   card: DecisionCard;
@@ -62,7 +63,10 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
             <div key={option.id} className="w-full flex">
               <Button
                 variant={option.variant}
-                className="w-full h-full text-base py-3 justify-start text-left whitespace-normal leading-snug flex flex-col items-start"
+                className={cn(
+                  "w-full h-full text-base py-3 justify-start text-left whitespace-normal leading-snug flex flex-col items-start",
+                  isProcessing && "opacity-50 cursor-not-allowed"
+                )}
                 onClick={() => onDecision(option)}
                 disabled={isProcessing}
               >
@@ -83,7 +87,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
             </div>
         ))}
       </CardContent>
-       <CardFooter className="flex-shrink-0">
+       <CardFooter>
         <p className="text-sm text-muted-foreground w-full text-center">
             É a vez de <span className="font-bold text-primary">{currentPlayer.name}</span> ({playerRole.name}) tomar uma decisão.
         </p>
@@ -91,3 +95,5 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
     </Card>
   );
 }
+
+    

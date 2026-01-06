@@ -4,7 +4,7 @@ import type { GameSession, Player, DecisionCard, Boss, DecisionOption, LogEntry 
 import { checkWinConditionsAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useDoc, useFirebase, useUser, useMemoFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import ResourceDashboard from './ResourceDashboard';
 import PlayerDashboard from './PlayerDashboard';
 import GameBoard from './GameBoard';
@@ -39,6 +39,22 @@ export default function GameClient({ gameId }: GameClientProps) {
   const [gameOver, setGameOver] = useState({ isGameOver: false, message: '' });
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Initialize with a default card to prevent hydration mismatch
+  const [currentCard, setCurrentCard] = useState<DecisionCard | null>(initialCards[0]);
+
+  useEffect(() => {
+    if (gameSession?.currentCardId) {
+      const card = initialCards.find(c => c.id === gameSession.currentCardId);
+      setCurrentCard(card || initialCards[0]);
+    } else if(gameSession && !gameSession.currentCardId && firestore && gameSessionRef){
+        // If no card is set, have the host set one.
+        if (user?.uid === gameSession.creatorId) {
+            const randomCard = getRandomCard(initialCards);
+            updateDoc(gameSessionRef, { currentCardId: randomCard.id });
+        }
+    }
+  }, [gameSession, firestore, gameSessionRef, user?.uid]);
+
 
   const players = useMemo(() => gameSession?.players ? Object.values(gameSession.players) : [], [gameSession?.players]);
   const currentPlayer = useMemo(() => {
@@ -46,41 +62,52 @@ export default function GameClient({ gameId }: GameClientProps) {
     return players[gameSession.currentPlayerIndex];
   }, [players, gameSession]);
   
-  const currentCard = useMemo(() => {
-     if(!gameSession?.currentCardId) return null;
-     return initialCards.find(c => c.id === gameSession.currentCardId);
-  }, [gameSession?.currentCardId])
-
+  const addLog = async (logEntry: Omit<LogEntry, 'id'>) => {
+    if (!gameSessionRef) return;
+    const newLog = { ...logEntry, id: Date.now() + Math.random() };
+    await updateDoc(gameSessionRef, {
+        logs: arrayUnion(newLog)
+    });
+  }
 
   const handleRestart = async () => {
     if (!firestore || !gameSessionRef) return;
     
-    // Get the first player (creator) to preserve them
     const creatorId = gameSession?.creatorId;
     const originalPlayers = gameSession?.players;
     let playersToKeep = {};
     if(creatorId && originalPlayers && originalPlayers[creatorId]) {
-      playersToKeep = {
-        [creatorId]: originalPlayers[creatorId]
+      const creatorPlayer = originalPlayers[creatorId];
+       playersToKeep = {
+        [creatorId]: {
+          ...creatorPlayer,
+          capital: 5, // Reset capital
+        }
       }
     }
 
     const randomCard = getRandomCard(initialCards);
-    await updateDoc(gameSessionRef, {
+    const newGameData = {
         ...initialGameState,
+        gameCode: gameSession?.gameCode,
+        creatorId: gameSession?.creatorId,
+        createdAt: gameSession?.createdAt,
         status: 'waiting',
-        players: playersToKeep, // Reset to only the creator or empty
+        players: playersToKeep,
         turn: 1,
         currentPlayerIndex: 0,
         currentCardId: randomCard.id,
         logs: [],
-    });
+    };
+    
+    await updateDoc(gameSessionRef, newGameData);
+
     setGameOver({ isGameOver: false, message: '' });
     toast({ title: "Jogo Reiniciado", description: "Uma nova partida começou." });
   };
   
   const handleDecision = useCallback(async (option: DecisionOption) => {
-    if (isProcessing || !gameSession || !currentPlayer || !firestore || !gameSessionRef) return;
+    if (isProcessing || !gameSession || !currentPlayer || !firestore || !gameSessionRef || user?.uid !== currentPlayer.id) return;
     setIsProcessing(true);
 
     let newGameState = JSON.parse(JSON.stringify(gameSession));
@@ -96,14 +123,12 @@ export default function GameClient({ gameId }: GameClientProps) {
 
       if ('indicator' in effect) {
         let change = effect.change;
+        // Role-based bonuses/penalties
         if (playerRole === 'ministerOfEducation' && effect.indicator === 'education' && change > 0) change *= 2;
         if (playerRole === 'influencer' && effect.indicator === 'popularSupport') change *= 2;
         if (playerRole === 'agriculture' && effect.indicator === 'hunger' && change < 0) change *= 2;
         if (playerRole === 'religious' && (effect.indicator === 'wellBeing' || effect.indicator === 'popularSupport') && change > 0) change = Math.ceil(change * 1.5);
-
-        if (playerRole === 'militaryCommander' && change < 0) {
-            change = Math.floor(change / 2);
-        }
+        if (playerRole === 'militaryCommander' && change < 0) change = Math.floor(change / 2);
 
         newGameState.indicators[effect.indicator] += change;
         if(effect.indicator !== 'hunger') {
@@ -132,86 +157,53 @@ export default function GameClient({ gameId }: GameClientProps) {
       }
     });
     
-    const newLogEntry: Omit<LogEntry, 'id'> = {
-        turn: newGameState.turn,
-        playerName: currentPlayer.name,
-        playerRole: roleDetails[currentPlayer.role].name,
-        decision: option.name,
-        effects: effectsDescriptions.join(', ') || "Nenhum efeito."
-    };
-    newGameState.logs.unshift({ ...newLogEntry, id: Date.now() + Math.random() });
-
-
     newGameState.boardPosition = Math.min(20, newGameState.boardPosition + boardChange);
 
     const bossOnCurrentTile = initialBosses.find(b => b.position === newGameState.boardPosition);
     if (bossOnCurrentTile && boardChange > 0) {
       if (newGameState.indicators[bossOnCurrentTile.requirement.indicator] < bossOnCurrentTile.requirement.level) {
-        newGameState.boardPosition = Math.max(1, newGameState.boardPosition - 1);
+        newGameState.boardPosition = Math.max(1, newGameState.boardPosition - 1); // Move back
         toast({
           variant: "destructive",
           title: "Progresso Bloqueado!",
           description: `O progresso da nação foi barrado por "${bossOnCurrentTile.name}". O indicador de ${indicatorDetails[bossOnCurrentTile.requirement.indicator].name} precisa ser no mínimo ${bossOnCurrentTile.requirement.level}.`,
-          icon: <Swords className="h-6 w-6 text-destructive-foreground" />,
         });
-        newGameState.logs.unshift({
-            id: Date.now() + Math.random(),
-            turn: newGameState.turn,
-            playerName: "Sistema",
-            playerRole: "Chefe",
-            decision: `Falha ao enfrentar ${bossOnCurrentTile.name}`,
-            effects: "Progresso da nação regrediu."
-        });
-
       } else {
         toast({
           title: "Desafio Superado!",
           description: `A nação venceu o desafio "${bossOnCurrentTile.name}"!`,
-          icon: <Crown className="h-6 w-6 text-amber-500" />,
-        });
-         newGameState.logs.unshift({
-            id: Date.now() + Math.random(),
-            turn: newGameState.turn,
-            playerName: "Sistema",
-            playerRole: "Chefe",
-            decision: `Vitória sobre ${bossOnCurrentTile.name}`,
-            effects: "A nação avança!"
         });
       }
     }
     
     const winCheckResult = await checkWinConditionsAction(newGameState, Object.values(newGameState.players));
     if (winCheckResult.isGameOver) {
-      setGameOver(winCheckResult);
-       newGameState.logs.unshift({
-          id: Date.now() + Math.random(),
-          turn: newGameState.turn,
-          playerName: "Sistema",
-          playerRole: "Fim de Jogo",
-          decision: winCheckResult.message,
-          effects: "A partida terminou."
-      });
-      newGameState.status = 'completed';
+        setGameOver(winCheckResult);
+        newGameState.status = 'completed';
     }
 
     const nextPlayerIndex = (newGameState.currentPlayerIndex + 1) % Object.values(newGameState.players).length;
     if (nextPlayerIndex === 0) {
       newGameState.turn += 1;
     }
-    newGameState.currentPlayerIndex = nextPlayerIndex;
-    newGameState.currentCardId = getRandomCard(initialCards, newGameState.currentCardId).id;
 
-    // Update the entire game session document in Firestore
     try {
         await updateDoc(gameSessionRef, {
             indicators: newGameState.indicators,
             players: newGameState.players,
             boardPosition: newGameState.boardPosition,
-            logs: newGameState.logs,
             status: newGameState.status,
             turn: newGameState.turn,
-            currentPlayerIndex: newGameState.currentPlayerIndex,
-            currentCardId: newGameState.currentCardId,
+            currentPlayerIndex: nextPlayerIndex,
+            currentCardId: getRandomCard(initialCards, newGameState.currentCardId).id,
+            logs: arrayUnion({
+              id: Date.now() + Math.random(),
+              turn: newGameState.turn,
+              playerName: currentPlayer.name,
+              playerRole: roleDetails[currentPlayer.role].name,
+              decision: option.name,
+              effects: effectsDescriptions.join(', ') || "Nenhum efeito."
+            })
         });
     } catch (e) {
         console.error("Failed to update game state:", e);
@@ -223,7 +215,7 @@ export default function GameClient({ gameId }: GameClientProps) {
     } finally {
        setIsProcessing(false);
     }
-  }, [gameSession, currentPlayer, isProcessing, toast, firestore, gameSessionRef]);
+  }, [gameSession, currentPlayer, isProcessing, toast, firestore, gameSessionRef, user?.uid]);
   
 
   if (isUserLoading || isGameLoading) {
@@ -287,3 +279,5 @@ export default function GameClient({ gameId }: GameClientProps) {
     </div>
   );
 }
+
+    
