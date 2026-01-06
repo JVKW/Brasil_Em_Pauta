@@ -55,7 +55,6 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           throw new Error("Esta partida já está cheia.");
       }
 
-      // If player is not already in the game, add them.
       if (!currentPlayers[user.uid]) {
         const availableRoles = Object.keys(roleDetails).filter(
           (role) => !Object.values(currentPlayers).some((p) => p.role === role)
@@ -71,11 +70,11 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           avatar: `${Object.keys(currentPlayers).length + 1}`,
         };
         
-        // This is the correct way to update a nested field in Firestore.
-        // It uses dot notation within a string to specify the path.
+        // Correct syntax for updating a nested field with a dynamic key
         await updateDoc(gameSessionRef, {
           [`players.${user.uid}`]: newPlayer
         });
+
       }
       
       toast({
