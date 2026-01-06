@@ -14,6 +14,7 @@ import { Crown, Swords } from 'lucide-react';
 import LogPanel from './LogPanel';
 
 type GameClientProps = {
+  gameId: string;
   initialGameState: GameState;
   initialPlayers: Player[];
   initialCards: DecisionCard[];
@@ -30,6 +31,7 @@ const getRandomCard = (cards: DecisionCard[], currentCardId?: string): DecisionC
 
 
 export default function GameClient({
+  gameId,
   initialGameState,
   initialPlayers,
   initialCards,
@@ -198,7 +200,7 @@ export default function GameClient({
           <ResourceDashboard indicators={gameState.indicators} />
           <GameBoard boardPosition={gameState.boardPosition} bosses={initialBosses} />
         </div>
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden min-h-0">
           <div className="lg:col-span-3 flex flex-col overflow-hidden">
             <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
           </div>
