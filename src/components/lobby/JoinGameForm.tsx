@@ -73,10 +73,11 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           capital: 5,
           avatar: `${Object.keys(currentPlayers).length + 1}`,
         };
-
+        
+        // This is the correct, robust way to update the nested object.
         const updatedPlayers = {
-            ...currentPlayers,
-            [user.uid]: newPlayer
+          ...currentPlayers,
+          [user.uid]: newPlayer
         };
         
         await updateDoc(gameSessionRef, {
