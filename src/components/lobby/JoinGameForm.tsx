@@ -48,18 +48,20 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
       }
 
       const gameData = gameDoc.data() as GameSession;
-      const players = gameData.players || {};
+      
+      // The state of players before the new player joins.
+      const currentPlayers = gameData.players || {};
 
-      if (Object.keys(players).length >= 4) {
+      if (Object.keys(currentPlayers).length >= 4) {
           throw new Error("Esta partida já está cheia.");
       }
 
       // Add player if not already in the game
-      if (!players[user.uid]) {
+      if (!currentPlayers[user.uid]) {
         const availableRoles = Object.keys(roleDetails).filter(
-          (role) => !Object.values(players).some((p) => p.role === role)
+          (role) => !Object.values(currentPlayers).some((p) => p.role === role)
         );
-        const newPlayerRole = availableRoles.length > 0 ? availableRoles[0] : 'influencer';
+        const newPlayerRole = availableRoles.length > 0 ? availableRoles[Math.floor(Math.random() * availableRoles.length)] : 'influencer';
 
         const newPlayer = {
           id: user.uid,
@@ -67,10 +69,18 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           role: newPlayerRole,
           isOpportunist: Math.random() < 0.25,
           capital: 5,
-          avatar: `${Object.keys(players).length + 1}`,
+          avatar: `${Object.keys(currentPlayers).length + 1}`,
         };
+        
+        // Create the new players object
+        const updatedPlayers = {
+            ...currentPlayers,
+            [user.uid]: newPlayer
+        };
+
+        // Atomically update the entire players map.
         await updateDoc(gameSessionRef, {
-          [`players.${user.uid}`]: newPlayer
+          players: updatedPlayers
         });
       }
       
