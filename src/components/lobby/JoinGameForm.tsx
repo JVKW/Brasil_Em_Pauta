@@ -49,14 +49,12 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
 
       const gameData = gameDoc.data() as GameSession;
       
-      // The state of players before the new player joins.
       const currentPlayers = gameData.players || {};
 
       if (Object.keys(currentPlayers).length >= 4) {
           throw new Error("Esta partida já está cheia.");
       }
 
-      // Add player if not already in the game
       if (!currentPlayers[user.uid]) {
         const availableRoles = Object.keys(roleDetails).filter(
           (role) => !Object.values(currentPlayers).some((p) => p.role === role)
@@ -72,15 +70,10 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           avatar: `${Object.keys(currentPlayers).length + 1}`,
         };
         
-        // Create the new players object
-        const updatedPlayers = {
-            ...currentPlayers,
-            [user.uid]: newPlayer
-        };
-
-        // Atomically update the entire players map.
+        // Use dot notation to update a specific field within the document.
+        // This is the most reliable way to update nested objects.
         await updateDoc(gameSessionRef, {
-          players: updatedPlayers
+          [`players.${user.uid}`]: newPlayer
         });
       }
       
