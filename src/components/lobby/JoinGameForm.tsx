@@ -49,52 +49,11 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
 
       const gameData = gameDoc.data() as GameSession;
       
-      const currentPlayers = gameData.players || {};
-
-      if (Object.keys(currentPlayers).length >= 4 && !currentPlayers[user.uid]) {
-          throw new Error("Esta partida já está cheia.");
+      if(gameData.players && Object.keys(gameData.players).length >= 4 && !gameData.players[user.uid]) {
+         throw new Error("Esta partida já está cheia.");
       }
 
-      // Only add the player if they are not already in the game
-      if (!currentPlayers[user.uid]) {
-        const availableRoles = Object.keys(roleDetails).filter(
-          (role) => !Object.values(currentPlayers).some((p: Player) => p.role === role)
-        );
-        
-        const newPlayerRole = availableRoles.length > 0 
-          ? availableRoles[Math.floor(Math.random() * availableRoles.length)] 
-          : 'influencer';
-        
-        const newPlayer: Player = {
-          id: user.uid,
-          name: playerName,
-          role: newPlayerRole,
-          isOpportunist: Math.random() < 0.25,
-          capital: 5,
-          avatar: `${Object.keys(currentPlayers).length + 1}`,
-        };
-        
-        // This is the correct, robust way to update the nested object.
-        const updatedPlayers = {
-          ...currentPlayers,
-          [user.uid]: newPlayer
-        };
-        
-        await updateDoc(gameSessionRef, {
-          players: updatedPlayers
-        });
-
-        toast({
-          title: 'Você entrou no jogo!',
-          description: `Bem-vindo à partida ${upperCaseGameCode}.`,
-        });
-      } else {
-        toast({
-          title: 'Você já está no jogo!',
-          description: `Reconectando à partida ${upperCaseGameCode}.`,
-        });
-      }
-
+      // We just signal that we want to join. GameClient will handle adding the player.
       onGameJoined(upperCaseGameCode);
 
     } catch (error: any) {
@@ -114,7 +73,7 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
       <h2 className="text-xl font-semibold text-center">Entrar em um Jogo</h2>
        <Input
         type="text"
-        placeholder="Seu nome"
+        placeholder="Seu nome (será usado na partida)"
         value={playerName}
         onChange={(e) => setPlayerName(e.target.value)}
         className="text-center"
