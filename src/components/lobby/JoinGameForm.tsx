@@ -41,30 +41,48 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
     const gameSessionRef = doc(firestore, 'game_sessions', upperCaseGameCode);
 
     let unsubscribe: Unsubscribe | null = null;
+    let hasJoined = false; // Flag to prevent multiple join attempts
 
     const timeout = setTimeout(() => {
         if(unsubscribe) unsubscribe();
-        setIsLoading(false);
-        toast({
-            variant: 'destructive',
-            title: 'Erro ao entrar na partida',
-            description: 'A partida não foi encontrada. Verifique o código e tente novamente.',
-        });
+        if (!hasJoined) {
+            setIsLoading(false);
+            toast({
+                variant: 'destructive',
+                title: 'Erro ao entrar na partida',
+                description: 'A partida não foi encontrada. Verifique o código e tente novamente.',
+            });
+        }
     }, 10000); // 10 second timeout
 
     unsubscribe = onSnapshot(gameSessionRef, async (docSnap) => {
+        if (hasJoined) { // If already joined, do nothing.
+          if(unsubscribe) unsubscribe();
+          clearTimeout(timeout);
+          return;
+        }
+
         if (docSnap.exists()) {
             clearTimeout(timeout);
-            if (unsubscribe) unsubscribe();
-
+            
             const gameData = docSnap.data() as GameSession;
             const currentPlayers = gameData.players || {};
 
             if (Object.keys(currentPlayers).length >= 4 && !currentPlayers[user.uid]) {
                 setIsLoading(false);
                 toast({ variant: "destructive", title: "Partida Cheia", description: "Esta partida já atingiu o número máximo de jogadores." });
+                if (unsubscribe) unsubscribe();
                 return;
             }
+
+            if (gameData.status !== 'waiting' && !currentPlayers[user.uid]) {
+                setIsLoading(false);
+                toast({ variant: "destructive", title: "Partida em Andamento", description: "Esta partida já começou." });
+                if (unsubscribe) unsubscribe();
+                return;
+            }
+
+            let updatedPlayers = { ...currentPlayers };
 
             if (!currentPlayers[user.uid]) {
                 const availableRoles = Object.keys(roleDetails).filter(
@@ -83,25 +101,28 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
                     capital: 5,
                     avatar: `${Object.keys(currentPlayers).length + 1}`,
                 };
-
-                try {
-                    await updateDoc(gameSessionRef, {
-                        [`players.${user.uid}`]: newPlayer
-                    });
-                    toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${gameData.gameCode}.` });
-                } catch(e: any) {
-                     console.error("Error joining game on update:", e);
-                     setIsLoading(false);
-                     toast({
-                        variant: 'destructive',
-                        title: 'Erro de Permissão',
-                        description: e.message || 'Não foi possível entrar na partida. Verifique as regras de segurança.',
-                     });
-                     return;
-                }
+                updatedPlayers[user.uid] = newPlayer;
             }
-            
-            onGameJoined(upperCaseGameCode);
+
+            try {
+                await updateDoc(gameSessionRef, {
+                    players: updatedPlayers
+                });
+                hasJoined = true;
+                toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${gameData.gameCode}.` });
+                onGameJoined(upperCaseGameCode);
+            } catch(e: any) {
+                 console.error("Error joining game on update:", e);
+                 setIsLoading(false);
+                 toast({
+                    variant: 'destructive',
+                    title: 'Erro ao entrar na partida',
+                    description: e.message || 'Não foi possível entrar na partida.',
+                 });
+            } finally {
+               if (unsubscribe) unsubscribe();
+            }
+
         }
     }, (error) => {
         console.error("Error with onSnapshot:", error);
