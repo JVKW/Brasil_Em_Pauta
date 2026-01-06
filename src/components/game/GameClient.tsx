@@ -43,7 +43,7 @@ export default function GameClient({ gameId }: GameClientProps) {
 
   // Effect to add user to the game if they are not already in it
   useEffect(() => {
-    if (gameSession && user && firestore && gameSessionRef && gameSession.status === 'waiting' && !gameSession.players[user.uid]) {
+    if (gameSession && user && firestore && gameSessionRef && gameSession.status === 'waiting' && !(gameSession.players && gameSession.players[user.uid])) {
       const joinGame = async () => {
         const currentPlayers = gameSession.players || {};
         if (Object.keys(currentPlayers).length >= 4) {
@@ -324,5 +324,7 @@ export default function GameClient({ gameId }: GameClientProps) {
     </div>
   );
 }
+
+    
 
     
