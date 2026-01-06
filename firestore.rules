@@ -63,7 +63,8 @@ service cloud.firestore {
      */
     function isGameJoinable(gameSessionId) {
       let game = get(/databases/$(database)/documents/game_sessions/$(gameSessionId)).data;
-      return game.status == 'waiting' && game.players.size() < 4;
+      // Use .keys().size() to correctly get the size of the players map.
+      return game.status == 'waiting' && game.players.keys().size() < 4;
     }
 
     /**
@@ -122,30 +123,16 @@ service cloud.firestore {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn();
       // A user can update a session if they are already a player in it, OR if the game is joinable.
-      allow update: if (isPlayerInGame(gameSessionId) || isGameJoinable(gameSessionId)) && resource != null;
-      allow delete: if isSessionCreator(gameSessionId) && resource != null;
+      allow update: if (isPlayerInGame(gameSessionId) || isGameJoinable(gameSessionId));
+      allow delete: if isSessionCreator(gameSessionId);
     }
 
-    match /game_sessions/{gameSessionId}/players/{playerId} {
-      allow get, list: if isPlayerInGame(gameSessionId);
-      allow create: if isPlayerInGame(gameSessionId) && request.auth.uid == playerId && request.resource.data.gameSessionId == gameSessionId;
-      allow update: if request.auth.uid == playerId && resource != null && request.resource.data.gameSessionId == resource.data.gameSessionId;
-      allow delete: if request.auth.uid == playerId && resource != null;
-    }
+    // The following rules are now obsolete because all data is within the game_sessions document,
+    // and the rules for that document already handle the necessary permissions.
+    // Keeping them might cause conflicts or confusion.
 
-    match /game_sessions/{gameSessionId}/nation_state/{nationStateId} {
-      allow get: if isPlayerInGame(gameSessionId);
-      allow list: if false;
-      allow create: if isPlayerInGame(gameSessionId) && request.resource.data.gameSessionId == gameSessionId;
-      allow update: if isPlayerInGame(gameSessionId) && resource != null && request.resource.data.gameSessionId == resource.data.gameSessionId;
-      allow delete: if false;
-    }
-
-    match /game_sessions/{gameSessionId}/game_session_decision_cards/{gameSessionDecisionCardId} {
-      allow get, list: if isPlayerInGame(gameSessionId);
-      allow create: if isPlayerInGame(gameSessionId) && request.resource.data.gameSessionId == gameSessionId;
-      allow update: if isPlayerInGame(gameSessionId) && resource != null && request.resource.data.gameSessionId == resource.data.gameSessionId;
-      allow delete: if isPlayerInGame(gameSessionId) && resource != null;
-    }
+    // match /game_sessions/{gameSessionId}/players/{playerId} { ... }
+    // match /game_sessions/{gameSessionId}/nation_state/{nationStateId} { ... }
+    // match /game_sessions/{gameSessionId}/game_session_decision_cards/{gameSessionDecisionCardId} { ... }
   }
 }
