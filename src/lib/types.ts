@@ -2,10 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 
 export type Indicator = 'economy' | 'education' | 'wellBeing' | 'popularSupport' | 'hunger' | 'militaryReligion';
 
-export type GameState = {
-  indicators: Record<Indicator, number>;
-  boardPosition: number;
-};
+export type Indicators = Record<Indicator, number>;
 
 export type Role = 
   | 'ministerOfEducation' 
@@ -51,7 +48,7 @@ export type DecisionCard = {
 };
 
 export type Boss = {
-  id: string;
+  id:string;
   name: string;
   position: number;
   requirement: {
@@ -74,3 +71,29 @@ export type LogEntry = {
   decision: string;
   effects: string;
 };
+
+// Represents the entire state of a game session stored in Firestore
+export type GameSession = {
+  id: string; // Document ID
+  gameCode: string;
+  creatorId: string;
+  status: 'waiting' | 'in_progress' | 'completed';
+  createdAt: any; // Firestore Timestamp
+  
+  // Game state
+  indicators: Indicators;
+  boardPosition: number;
+  
+  // Player state
+  players: Record<string, Player>; // Map of uid to Player object
+  
+  // Turn management
+  turn: number;
+  currentPlayerIndex: number;
+  currentCardId: string;
+  
+  // History
+  logs: LogEntry[];
+};
+
+export type GameState = Omit<GameSession, 'id' | 'gameCode' | 'creatorId' | 'status' | 'createdAt' | 'players' | 'turn' | 'currentPlayerIndex' | 'currentCardId' | 'logs'>;

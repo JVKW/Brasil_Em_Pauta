@@ -1,24 +1,22 @@
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import type { GameState, Player, DecisionCard, Boss, DecisionOption, LogEntry } from '@/lib/types';
+import type { GameSession, Player, DecisionCard, Boss, DecisionOption, LogEntry } from '@/lib/types';
 import { checkWinConditionsAction } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
+import { useDoc, useFirebase, useUser, useMemoFirebase } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import ResourceDashboard from './ResourceDashboard';
 import PlayerDashboard from './PlayerDashboard';
 import GameBoard from './GameBoard';
 import DecisionCardComponent from './DecisionCard';
 import EndGameDialog from './EndGameDialog';
-import { roleDetails, indicatorDetails } from '@/lib/game-data';
+import { roleDetails, indicatorDetails, initialCards, initialBosses, initialGameState } from '@/lib/game-data';
 import Header from './Header';
-import { Crown, Swords } from 'lucide-react';
+import { Crown, Swords, Loader2 } from 'lucide-react';
 import LogPanel from './LogPanel';
 
 type GameClientProps = {
   gameId: string;
-  initialGameState: GameState;
-  initialPlayers: Player[];
-  initialCards: DecisionCard[];
-  initialBosses: Boss[];
 };
 
 const getRandomCard = (cards: DecisionCard[], currentCardId?: string): DecisionCard => {
@@ -30,54 +28,64 @@ const getRandomCard = (cards: DecisionCard[], currentCardId?: string): DecisionC
 };
 
 
-export default function GameClient({
-  gameId,
-  initialGameState,
-  initialPlayers,
-  initialCards,
-  initialBosses,
-}: GameClientProps) {
-  const [gameState, setGameState] = useState<GameState>(initialGameState);
-  const [players, setPlayers] = useState<Player[]>(initialPlayers);
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-  const [currentCard, setCurrentCard] = useState<DecisionCard>(initialCards[0]);
+export default function GameClient({ gameId }: GameClientProps) {
+  const { firestore } = useFirebase();
+  const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
+  
+  const gameSessionRef = useMemoFirebase(() => firestore ? doc(firestore, 'game_sessions', gameId) : null, [firestore, gameId]);
+  const { data: gameSession, isLoading: isGameLoading, error: gameError } = useDoc<GameSession>(gameSessionRef);
+  
   const [gameOver, setGameOver] = useState({ isGameOver: false, message: '' });
   const [isProcessing, setIsProcessing] = useState(false);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [turn, setTurn] = useState(1);
-  const { toast } = useToast();
 
-  useEffect(() => {
-    setCurrentCard(getRandomCard(initialCards));
-  }, [initialCards]);
 
-  const currentPlayer = useMemo(() => players[currentPlayerIndex], [players, currentPlayerIndex]);
+  const players = useMemo(() => gameSession?.players ? Object.values(gameSession.players) : [], [gameSession?.players]);
+  const currentPlayer = useMemo(() => {
+    if (!gameSession || players.length === 0) return null;
+    return players[gameSession.currentPlayerIndex];
+  }, [players, gameSession]);
+  
+  const currentCard = useMemo(() => {
+     if(!gameSession?.currentCardId) return null;
+     return initialCards.find(c => c.id === gameSession.currentCardId);
+  }, [gameSession?.currentCardId])
 
-  const addLog = (log: Omit<LogEntry, 'id'>) => {
-    // Using a random number combined with timestamp to ensure key uniqueness
-    const uniqueId = Date.now() + Math.random();
-    setLogs(prevLogs => [{ ...log, id: uniqueId }, ...prevLogs]);
-  };
 
-  const handleRestart = () => {
-    setGameState(initialGameState);
-    setPlayers(initialPlayers);
-    setCurrentPlayerIndex(0);
-    setCurrentCard(getRandomCard(initialCards));
+  const handleRestart = async () => {
+    if (!firestore || !gameSessionRef) return;
+    
+    // Get the first player (creator) to preserve them
+    const creatorId = gameSession?.creatorId;
+    const originalPlayers = gameSession?.players;
+    let playersToKeep = {};
+    if(creatorId && originalPlayers && originalPlayers[creatorId]) {
+      playersToKeep = {
+        [creatorId]: originalPlayers[creatorId]
+      }
+    }
+
+    const randomCard = getRandomCard(initialCards);
+    await updateDoc(gameSessionRef, {
+        ...initialGameState,
+        status: 'waiting',
+        players: playersToKeep, // Reset to only the creator or empty
+        turn: 1,
+        currentPlayerIndex: 0,
+        currentCardId: randomCard.id,
+        logs: [],
+    });
     setGameOver({ isGameOver: false, message: '' });
-    setLogs([]);
-    setTurn(1);
     toast({ title: "Jogo Reiniciado", description: "Uma nova partida começou." });
   };
-
+  
   const handleDecision = useCallback(async (option: DecisionOption) => {
-    if (isProcessing) return;
+    if (isProcessing || !gameSession || !currentPlayer || !firestore || !gameSessionRef) return;
     setIsProcessing(true);
 
-    let newGameState = JSON.parse(JSON.stringify(gameState));
-    let newPlayers = JSON.parse(JSON.stringify(players));
-    const player = newPlayers[currentPlayerIndex];
-    const playerRole = player.role;
+    let newGameState = JSON.parse(JSON.stringify(gameSession));
+    const playerToUpdate = newGameState.players[currentPlayer.id];
+    const playerRole = playerToUpdate.role;
     
     let boardChange = 0;
     const effectsDescriptions: string[] = [];
@@ -109,7 +117,7 @@ export default function GameClient({
       } else if ('capital' in effect) {
         let change = effect.change;
         if(playerRole === 'economyManager' && change > 0) change = Math.ceil(change * 1.5);
-        player.capital += change;
+        playerToUpdate.capital += change;
         valueChange = change;
         indicatorName = 'Capital';
 
@@ -124,13 +132,15 @@ export default function GameClient({
       }
     });
     
-    addLog({
-      turn,
-      playerName: currentPlayer.name,
-      playerRole: roleDetails[currentPlayer.role].name,
-      decision: option.name,
-      effects: effectsDescriptions.join(', ') || "Nenhum efeito."
-    });
+    const newLogEntry: Omit<LogEntry, 'id'> = {
+        turn: newGameState.turn,
+        playerName: currentPlayer.name,
+        playerRole: roleDetails[currentPlayer.role].name,
+        decision: option.name,
+        effects: effectsDescriptions.join(', ') || "Nenhum efeito."
+    };
+    newGameState.logs.unshift({ ...newLogEntry, id: Date.now() + Math.random() });
+
 
     newGameState.boardPosition = Math.min(20, newGameState.boardPosition + boardChange);
 
@@ -144,8 +154,9 @@ export default function GameClient({
           description: `O progresso da nação foi barrado por "${bossOnCurrentTile.name}". O indicador de ${indicatorDetails[bossOnCurrentTile.requirement.indicator].name} precisa ser no mínimo ${bossOnCurrentTile.requirement.level}.`,
           icon: <Swords className="h-6 w-6 text-destructive-foreground" />,
         });
-        addLog({
-            turn,
+        newGameState.logs.unshift({
+            id: Date.now() + Math.random(),
+            turn: newGameState.turn,
             playerName: "Sistema",
             playerRole: "Chefe",
             decision: `Falha ao enfrentar ${bossOnCurrentTile.name}`,
@@ -158,8 +169,9 @@ export default function GameClient({
           description: `A nação venceu o desafio "${bossOnCurrentTile.name}"!`,
           icon: <Crown className="h-6 w-6 text-amber-500" />,
         });
-         addLog({
-            turn,
+         newGameState.logs.unshift({
+            id: Date.now() + Math.random(),
+            turn: newGameState.turn,
             playerName: "Sistema",
             playerRole: "Chefe",
             decision: `Vitória sobre ${bossOnCurrentTile.name}`,
@@ -167,40 +179,88 @@ export default function GameClient({
         });
       }
     }
-
-    setGameState(newGameState);
-    setPlayers(newPlayers);
     
-    const winCheckResult = await checkWinConditionsAction(newGameState, newPlayers);
+    const winCheckResult = await checkWinConditionsAction(newGameState, Object.values(newGameState.players));
     if (winCheckResult.isGameOver) {
       setGameOver(winCheckResult);
-       addLog({
-          turn,
+       newGameState.logs.unshift({
+          id: Date.now() + Math.random(),
+          turn: newGameState.turn,
           playerName: "Sistema",
           playerRole: "Fim de Jogo",
           decision: winCheckResult.message,
           effects: "A partida terminou."
       });
-      setIsProcessing(false);
-      return;
+      newGameState.status = 'completed';
     }
 
-    const nextPlayerIndex = (currentPlayerIndex + 1) % newPlayers.length;
+    const nextPlayerIndex = (newGameState.currentPlayerIndex + 1) % Object.values(newGameState.players).length;
     if (nextPlayerIndex === 0) {
-      setTurn(t => t + 1);
+      newGameState.turn += 1;
     }
-    setCurrentPlayerIndex(nextPlayerIndex);
-    setCurrentCard(getRandomCard(initialCards, currentCard.id));
-    setIsProcessing(false);
-  }, [gameState, players, currentPlayer, currentPlayerIndex, initialBosses, initialCards, isProcessing, toast, turn, currentCard]);
+    newGameState.currentPlayerIndex = nextPlayerIndex;
+    newGameState.currentCardId = getRandomCard(initialCards, newGameState.currentCardId).id;
+
+    // Update the entire game session document in Firestore
+    try {
+        await updateDoc(gameSessionRef, {
+            indicators: newGameState.indicators,
+            players: newGameState.players,
+            boardPosition: newGameState.boardPosition,
+            logs: newGameState.logs,
+            status: newGameState.status,
+            turn: newGameState.turn,
+            currentPlayerIndex: newGameState.currentPlayerIndex,
+            currentCardId: newGameState.currentCardId,
+        });
+    } catch (e) {
+        console.error("Failed to update game state:", e);
+        toast({
+            variant: "destructive",
+            title: "Erro de Sincronização",
+            description: "Não foi possível salvar sua jogada. Verifique sua conexão.",
+        });
+    } finally {
+       setIsProcessing(false);
+    }
+  }, [gameSession, currentPlayer, isProcessing, toast, firestore, gameSessionRef]);
+  
+
+  if (isUserLoading || isGameLoading) {
+    return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">Carregando jogo...</p>
+        </div>
+    );
+  }
+
+  if (gameError) {
+      return (
+          <div className="flex min-h-screen flex-col items-center justify-center bg-background text-red-500">
+              <p>Erro ao carregar o jogo: {gameError.message}</p>
+          </div>
+      );
+  }
+  
+  if (!gameSession || !currentPlayer || !currentCard) {
+     return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">Aguardando dados da partida...</p>
+        </div>
+    );
+  }
+
+  const isCurrentPlayerTurn = user?.uid === currentPlayer.id;
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
-      <Header onRestart={handleRestart} />
+      <Header onRestart={handleRestart} gameCode={gameSession.gameCode} />
       <main className="flex-1 container mx-auto px-4 py-2 flex flex-col gap-2 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-          <ResourceDashboard indicators={gameState.indicators} />
-          <GameBoard boardPosition={gameState.boardPosition} bosses={initialBosses} />
+          <ResourceDashboard indicators={gameSession.indicators} />
+          <GameBoard boardPosition={gameSession.boardPosition} bosses={initialBosses} />
         </div>
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden min-h-0">
           <div className="lg:col-span-3 flex flex-col overflow-hidden">
@@ -210,12 +270,12 @@ export default function GameClient({
             <DecisionCardComponent
               card={currentCard}
               onDecision={handleDecision}
-              isProcessing={isProcessing}
+              isProcessing={isProcessing || !isCurrentPlayerTurn}
               currentPlayer={currentPlayer}
             />
           </div>
           <div className="lg:col-span-3 flex flex-col overflow-hidden">
-            <LogPanel logs={logs} />
+            <LogPanel logs={gameSession.logs || []} />
           </div>
         </div>
       </main>

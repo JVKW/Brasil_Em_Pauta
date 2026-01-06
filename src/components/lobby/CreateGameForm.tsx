@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { initialCards, initialBosses, initialGameState } from '@/lib/game-data';
 
 interface CreateGameFormProps {
   onGameCreated: (gameId: string) => void;
@@ -15,10 +16,20 @@ interface CreateGameFormProps {
 
 export default function CreateGameForm({ onGameCreated }: CreateGameFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [playerName, setPlayerName] = useState('');
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
   const handleCreateGame = async () => {
+    if (!playerName.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Nome inválido',
+        description: 'Por favor, insira seu nome para criar um jogo.',
+      });
+      return;
+    }
+    
     if (!firestore || !user) {
       toast({
         variant: 'destructive',
@@ -33,20 +44,29 @@ export default function CreateGameForm({ onGameCreated }: CreateGameFormProps) {
       const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const gameSessionRef = doc(firestore, 'game_sessions', gameCode);
 
+      // Select a random card for the initial state
+      const randomCard = initialCards[Math.floor(Math.random() * initialCards.length)];
+
       const gameSessionData = {
         gameCode,
         creatorId: user.uid,
         status: 'waiting',
         createdAt: serverTimestamp(),
+        ...initialGameState,
         players: {
           [user.uid]: {
-            name: user.displayName || 'Anônimo',
-            role: 'economyManager', // Default role, can be changed in lobby
+            id: user.uid,
+            name: playerName,
+            role: 'economyManager', // Default role for creator
             isOpportunist: Math.random() < 0.25, // 25% chance
             capital: 5,
             avatar: '1',
           },
         },
+        turn: 1,
+        currentPlayerIndex: 0,
+        currentCardId: randomCard.id,
+        logs: [],
       };
 
       setDocumentNonBlocking(gameSessionRef, gameSessionData, { merge: false });
@@ -71,7 +91,14 @@ export default function CreateGameForm({ onGameCreated }: CreateGameFormProps) {
   return (
     <div className="flex flex-col gap-4">
       <h2 className="text-xl font-semibold text-center">Criar um Novo Jogo</h2>
-      <Button onClick={handleCreateGame} disabled={isLoading}>
+       <Input
+        type="text"
+        placeholder="Seu nome"
+        value={playerName}
+        onChange={(e) => setPlayerName(e.target.value)}
+        className="text-center"
+      />
+      <Button onClick={handleCreateGame} disabled={isLoading || !playerName}>
         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         Criar Partida
       </Button>
