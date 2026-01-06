@@ -1,41 +1,4 @@
 
-/**
- * Core Philosophy:
- * This ruleset enforces a collaborative, session-based security model for a multiplayer game.
- * The primary security boundary is the Game Session. A user's access rights are determined
- * by their participation in a specific game session. Static game data (like cards and boss
- * encounters) is publicly readable to allow clients to load game assets easily, but is
- * not client-writable to protect game integrity.
- *
- * Data Structure:
- * All dynamic game data is nested under the `/game_sessions/{gameSessionId}` path. This
- * includes players, the shared nation state, and cards dealt for that session. This
- * structure ensures that all data related to a single game is colocated, simplifying
- * security rules and queries. Static game assets are stored in top-level collections
- * like `/decision_cards` and `/boss_encounters`.
- *
- * Key Security Decisions:
- * - Session Membership is Required: To read or write any data within a specific game
- *   session, the requesting user MUST be a participant in that game.
- * - Public Read for Game Lobbies: All signed-in users can list game sessions to find and
- *   join a game, but they cannot see the internal details of a session until they join.
- * - Static Data is Read-Only: Core game definitions are public but immutable from the client-side.
- *
- * Denormalization for Authorization:
- * To enable this security model, a critical denormalization pattern is REQUIRED. Each
- * `/game_sessions/{gameSessionId}` document MUST contain a `players` map that stores the
- * UIDs of all participants (e.g., `{ players: { 'uid1': 'host', 'uid2': 'member' } }`).
- * This allows security rules for any subcollection document (like players or nation_state)
- * to perform a single, fast `get()` on the parent game session to verify the user's
- * membership before granting access. This avoids impossible-to-secure queries and is
- * essential for the rules to function correctly.
- *
- * Structural Segregation:
- * The design separates dynamic, session-specific data (under `/game_sessions`) from static,
- * global game data (`/decision_cards`, `/boss_encounters`). This segregation creates a clear
- * and secure boundary, allowing for simple, performant rules that make static assets
- * public while strictly controlling access to active game state.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -60,12 +23,12 @@ service cloud.firestore {
     }
     
     /**
-     * Checks if the game session is in a 'waiting' state and has room for more players.
+     * Checks if the game session is in a 'waiting' state.
      * It checks the existing document in the database, not the incoming request data.
      */
-    function isGameJoinable(gameSessionId) {
+    function isGameWaiting(gameSessionId) {
       let game = get(/databases/$(database)/documents/game_sessions/$(gameSessionId)).data;
-      return game.status == 'waiting' && game.players.keys().size() < 4;
+      return game.status == 'waiting';
     }
 
     /**
@@ -78,62 +41,31 @@ service cloud.firestore {
       return isSignedIn() && gameSession.creatorId == request.auth.uid;
     }
 
-    /**
-     * @description
-     * Stores the collection of decision cards available in the game. This data is considered
-     * public game content and is read-only for all clients.
-     * @path /decision_cards/{decisionCardId}
-     * @allow (get) Any user, signed in or not, can read a decision card.
-     * @deny (create) No client is allowed to create new decision cards.
-     * @principle Protects static game assets from modification by clients.
-     */
     match /decision_cards/{decisionCardId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if false;
     }
 
-    /**
-     * @description
-     * Stores static information about all boss encounters in the game. This data is
-     * public game content and is read-only for all clients.
-     * @path /boss_encounters/{bossEncounterId}
-     * @allow (get) Any user, signed in or not, can read boss encounter data.
-     * @deny (create) No client is allowed to create new boss encounters.
-     * @principle Protects static game assets from modification by clients.
-     */
     match /boss_encounters/{bossEncounterId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if false;
     }
 
     /**
      * @description
      * Stores the metadata for each game session. Allows signed-in users to list sessions
-     * to join a game. Creation is allowed for any signed-in user, but only the session
-     * creator can delete it. Updates are allowed by any player in the game (e.g., to change status).
-     * @path /game_sessions/{gameSessionId}
-     * @allow (create) Any signed-in user can create a new game session.
-     * @deny (delete) A user who is not the creator cannot delete the session.
-     * @principle Secures the lifecycle of a game session, delegating control to its participants.
+     * to join a game. Creation is allowed for any signed-in user.
+     * Updates are more complex:
+     * - Allowed if the user is already in the game (to make a move).
+     * - Allowed if the game is in a 'waiting' state (to allow new players to join).
+     * Deletion is restricted to the original creator.
      */
     match /game_sessions/{gameSessionId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn();
-      // A user can update a session if they are already a player in it, OR if the game is joinable.
-      allow update: if (isPlayerInGame(gameSessionId) || isGameJoinable(gameSessionId));
+      // A user can update a session if they are already a player in it, OR if the game is still waiting for players.
+      allow update: if isPlayerInGame(gameSessionId) || isGameWaiting(gameSessionId);
       allow delete: if isSessionCreator(gameSessionId);
     }
-
-    // The following rules are now obsolete because all data is within the game_sessions document,
-    // and the rules for that document already handle the necessary permissions.
-    // Keeping them might cause conflicts or confusion.
-
-    // match /game_sessions/{gameSessionId}/players/{playerId} { ... }
-    // match /game_sessions/{gameSessionId}/nation_state/{nationStateId} { ... }
-    // match /game_sessions/{gameSessionId}/game_session_decision_cards/{gameSessionDecisionCardId} { ... }
   }
 }
