@@ -57,6 +57,14 @@ service cloud.firestore {
     function isPlayerInGame(gameSessionId) {
       return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/game_sessions/$(gameSessionId)).data.players;
     }
+    
+    /**
+     * Checks if the game session is in a 'waiting' state and has room for more players.
+     */
+    function isGameJoinable(gameSessionId) {
+      let game = get(/databases/$(database)/documents/game_sessions/$(gameSessionId)).data;
+      return game.status == 'waiting' && game.players.size() < 4;
+    }
 
     /**
      * Checks if the currently authenticated user is the creator of the game session.
@@ -112,8 +120,9 @@ service cloud.firestore {
      */
     match /game_sessions/{gameSessionId} {
       allow get, list: if isSignedIn();
-      allow create: if isSignedIn(); // TODO: Add validation like `request.resource.data.creatorId == request.auth.uid` once `creatorId` is in the schema.
-      allow update: if isPlayerInGame(gameSessionId) && resource != null;
+      allow create: if isSignedIn();
+      // A user can update a session if they are already a player in it, OR if the game is joinable.
+      allow update: if (isPlayerInGame(gameSessionId) || isGameJoinable(gameSessionId)) && resource != null;
       allow delete: if isSessionCreator(gameSessionId) && resource != null;
     }
 
