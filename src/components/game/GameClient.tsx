@@ -41,53 +41,6 @@ export default function GameClient({ gameId }: GameClientProps) {
 
   const [currentCard, setCurrentCard] = useState<DecisionCard | null>(initialCards[0]);
 
-  // Effect to add user to the game if they are not already in it
-  useEffect(() => {
-    if (gameSession && user && firestore && gameSessionRef && gameSession.status === 'waiting' && !(gameSession.players && gameSession.players[user.uid])) {
-      const joinGame = async () => {
-        const currentPlayers = gameSession.players || {};
-        if (Object.keys(currentPlayers).length >= 4) {
-          toast({ variant: 'destructive', title: 'Partida cheia', description: 'Não foi possível entrar, a partida já está cheia.' });
-          // Potentially redirect user back to lobby
-          return;
-        }
-
-        const availableRoles = Object.keys(roleDetails).filter(
-          (role) => !Object.values(currentPlayers).some((p: Player) => p.role === role)
-        );
-        
-        const newPlayerRole = availableRoles.length > 0 
-          ? availableRoles[Math.floor(Math.random() * availableRoles.length)] 
-          : 'influencer';
-
-        const newPlayer: Player = {
-          id: user.uid,
-          name: user.displayName || `Jogador ${Object.keys(currentPlayers).length + 1}`,
-          role: newPlayerRole,
-          isOpportunist: Math.random() < 0.25,
-          capital: 5,
-          avatar: `${Object.keys(currentPlayers).length + 1}`,
-        };
-
-        try {
-          await updateDoc(gameSessionRef, {
-            [`players.${user.uid}`]: newPlayer
-          });
-          toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${gameSession.gameCode}.`});
-        } catch (error: any) {
-           console.error("Error auto-joining game:", error);
-            toast({
-              variant: "destructive",
-              title: "Erro ao entrar",
-              description: error.message || "Não foi possível entrar na partida.",
-            });
-        }
-      };
-
-      joinGame();
-    }
-  }, [gameSession, user, firestore, gameSessionRef, toast]);
-
 
   useEffect(() => {
     if (gameSession?.currentCardId) {

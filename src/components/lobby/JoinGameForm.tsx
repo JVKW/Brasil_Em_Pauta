@@ -49,11 +49,38 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
 
       const gameData = gameDoc.data() as GameSession;
       
-      if(gameData.players && Object.keys(gameData.players).length >= 4 && !gameData.players[user.uid]) {
+      const currentPlayers = gameData.players || {};
+
+      if(Object.keys(currentPlayers).length >= 4 && !currentPlayers[user.uid]) {
          throw new Error("Esta partida já está cheia.");
       }
 
-      // We just signal that we want to join. GameClient will handle adding the player.
+      // If player is not already in the game, add them.
+      if (!currentPlayers[user.uid]) {
+        const availableRoles = Object.keys(roleDetails).filter(
+          (role) => !Object.values(currentPlayers).some((p: Player) => p.role === role)
+        );
+        
+        const newPlayerRole = availableRoles.length > 0 
+          ? availableRoles[Math.floor(Math.random() * availableRoles.length)] 
+          : 'influencer';
+
+        const newPlayer: Player = {
+          id: user.uid,
+          name: playerName,
+          role: newPlayerRole,
+          isOpportunist: Math.random() < 0.25,
+          capital: 5,
+          avatar: `${Object.keys(currentPlayers).length + 1}`,
+        };
+        
+        await updateDoc(gameSessionRef, {
+            [`players.${user.uid}`]: newPlayer
+        });
+        
+        toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${gameData.gameCode}.`});
+      }
+
       onGameJoined(upperCaseGameCode);
 
     } catch (error: any) {
