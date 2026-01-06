@@ -55,6 +55,7 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           throw new Error("Esta partida já está cheia.");
       }
 
+      // If player is not already in the game, add them.
       if (!currentPlayers[user.uid]) {
         const availableRoles = Object.keys(roleDetails).filter(
           (role) => !Object.values(currentPlayers).some((p) => p.role === role)
@@ -91,7 +92,8 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
         title: 'Erro ao entrar na partida',
         description: error.message || 'Não foi possível se conectar. Tente novamente.',
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   };
 
