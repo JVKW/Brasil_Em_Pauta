@@ -54,7 +54,9 @@ export default function GameClient({
   const currentPlayer = useMemo(() => players[currentPlayerIndex], [players, currentPlayerIndex]);
 
   const addLog = (log: Omit<LogEntry, 'id'>) => {
-    setLogs(prevLogs => [{ ...log, id: Date.now() }, ...prevLogs]);
+    // Using a random number combined with timestamp to ensure key uniqueness
+    const uniqueId = Date.now() + Math.random();
+    setLogs(prevLogs => [{ ...log, id: uniqueId }, ...prevLogs]);
   };
 
   const handleRestart = () => {
