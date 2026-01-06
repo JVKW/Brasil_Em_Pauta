@@ -71,7 +71,8 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           avatar: `${Object.keys(currentPlayers).length + 1}`,
         };
         
-        // Correct syntax for updating a nested field with a dynamic key
+        // This is the correct, definitive syntax for updating a nested field with a dynamic key in Firestore.
+        // It creates an object like { "players.someUserId": newPlayerData }, which Firestore understands.
         await updateDoc(gameSessionRef, {
           [`players.${user.uid}`]: newPlayer
         });
