@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
-import { GameSession } from '@/lib/types';
+import { GameSession, Player } from '@/lib/types';
 import { roleDetails } from '@/lib/game-data';
 
 interface JoinGameFormProps {
@@ -58,11 +58,14 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
       // Only add the player if they are not already in the game
       if (!currentPlayers[user.uid]) {
         const availableRoles = Object.keys(roleDetails).filter(
-          (role) => !Object.values(currentPlayers).some((p: any) => p.role === role)
+          (role) => !Object.values(currentPlayers).some((p: Player) => p.role === role)
         );
-        const newPlayerRole = availableRoles.length > 0 ? availableRoles[Math.floor(Math.random() * availableRoles.length)] : 'influencer';
         
-        const newPlayer = {
+        const newPlayerRole = availableRoles.length > 0 
+          ? availableRoles[Math.floor(Math.random() * availableRoles.length)] 
+          : 'influencer';
+        
+        const newPlayer: Player = {
           id: user.uid,
           name: playerName,
           role: newPlayerRole,
@@ -70,11 +73,14 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           capital: 5,
           avatar: `${Object.keys(currentPlayers).length + 1}`,
         };
+
+        const updatedPlayers = {
+            ...currentPlayers,
+            [user.uid]: newPlayer
+        };
         
-        // This is the correct, definitive syntax for updating a nested field with a dynamic key in Firestore.
-        // It creates an object like { "players.someUserId": newPlayerData }, which Firestore understands.
         await updateDoc(gameSessionRef, {
-          [`players.${user.uid}`]: newPlayer
+          players: updatedPlayers
         });
 
         toast({
