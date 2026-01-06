@@ -5,10 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { doc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { initialCards, initialBosses, initialGameState } from '@/lib/game-data';
+import { initialCards, initialGameState, roleDetails } from '@/lib/game-data';
 
 interface CreateGameFormProps {
   onGameCreated: (gameId: string) => void;
@@ -44,20 +43,21 @@ export default function CreateGameForm({ onGameCreated }: CreateGameFormProps) {
       const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       const gameSessionRef = doc(firestore, 'game_sessions', gameCode);
 
-      // Select a random card for the initial state
       const randomCard = initialCards[Math.floor(Math.random() * initialCards.length)];
+      const roles = Object.keys(roleDetails);
+      const randomRole = roles[Math.floor(Math.random() * roles.length)];
 
       const gameSessionData = {
+        ...initialGameState,
         gameCode,
         creatorId: user.uid,
         status: 'waiting',
-        createdAt: serverTimestamp(),
-        ...initialGameState,
+        createdAt: new Date().toISOString(),
         players: {
           [user.uid]: {
             id: user.uid,
             name: playerName,
-            role: 'economyManager', // Default role for creator
+            role: randomRole,
             isOpportunist: Math.random() < 0.25, // 25% chance
             capital: 5,
             avatar: '1',
@@ -69,7 +69,7 @@ export default function CreateGameForm({ onGameCreated }: CreateGameFormProps) {
         logs: [],
       };
 
-      setDocumentNonBlocking(gameSessionRef, gameSessionData, { merge: false });
+      await setDoc(gameSessionRef, gameSessionData);
       
       toast({
         title: 'Jogo Criado!',

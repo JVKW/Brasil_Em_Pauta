@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { GameSession } from '@/lib/types';
+import { roleDetails } from '@/lib/game-data';
 
 interface JoinGameFormProps {
   onGameJoined: (gameId: string) => void;
@@ -36,7 +37,8 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
     }
     
     setIsLoading(true);
-    const gameSessionRef = doc(firestore, 'game_sessions', gameCode.toUpperCase());
+    const upperCaseGameCode = gameCode.toUpperCase();
+    const gameSessionRef = doc(firestore, 'game_sessions', upperCaseGameCode);
 
     try {
       const gameDoc = await getDoc(gameSessionRef);
@@ -54,10 +56,15 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
 
       // Add player if not already in the game
       if (!players[user.uid]) {
+        const availableRoles = Object.keys(roleDetails).filter(
+          (role) => !Object.values(players).some((p) => p.role === role)
+        );
+        const newPlayerRole = availableRoles.length > 0 ? availableRoles[0] : 'influencer';
+
         const newPlayer = {
           id: user.uid,
           name: playerName,
-          role: 'influencer', // TODO: Allow role selection
+          role: newPlayerRole,
           isOpportunist: Math.random() < 0.25,
           capital: 5,
           avatar: `${Object.keys(players).length + 1}`,
@@ -69,10 +76,10 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
       
       toast({
         title: 'Você entrou no jogo!',
-        description: `Bem-vindo à partida ${gameCode.toUpperCase()}.`,
+        description: `Bem-vindo à partida ${upperCaseGameCode}.`,
       });
 
-      onGameJoined(gameCode.toUpperCase());
+      onGameJoined(upperCaseGameCode);
 
     } catch (error: any) {
       console.error("Error joining game:", error);
