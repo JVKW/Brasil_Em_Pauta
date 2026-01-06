@@ -1,0 +1,330 @@
+{
+  "entities": {
+    "GameSession": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GameSession",
+      "type": "object",
+      "description": "Represents a single game session with a unique code for multiplayer functionality.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the game session."
+        },
+        "gameCode": {
+          "type": "string",
+          "description": "Unique code for joining the game session."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the game session was created.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the game session (e.g., 'waiting', 'in_progress', 'completed')."
+        }
+      },
+      "required": [
+        "id",
+        "gameCode",
+        "createdAt",
+        "status"
+      ]
+    },
+    "Player": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Player",
+      "type": "object",
+      "description": "Represents a player participating in a game session.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the player."
+        },
+        "gameSessionId": {
+          "type": "string",
+          "description": "Reference to GameSession. (Relationship: GameSession 1:N Player)"
+        },
+        "characterRole": {
+          "type": "string",
+          "description": "The character role assigned to the player (e.g., 'Minister of Education')."
+        },
+        "capital": {
+          "type": "number",
+          "description": "The amount of private capital the player has accumulated."
+        }
+      },
+      "required": [
+        "id",
+        "gameSessionId",
+        "characterRole",
+        "capital"
+      ]
+    },
+    "NationState": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "NationState",
+      "type": "object",
+      "description": "Represents the nation state's progress and resources in a specific game session.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the nation state's state."
+        },
+        "gameSessionId": {
+          "type": "string",
+          "description": "Reference to GameSession. (Relationship: GameSession 1:1 NationState)"
+        },
+        "economy": {
+          "type": "number",
+          "description": "Level of the country's economy (0-10)."
+        },
+        "education": {
+          "type": "number",
+          "description": "Level of education and awareness (0-10)."
+        },
+        "wellbeing": {
+          "type": "number",
+          "description": "General quality of life (0-10)."
+        },
+        "popularSupport": {
+          "type": "number",
+          "description": "Level of public trust in the government (0-10)."
+        },
+        "hunger": {
+          "type": "number",
+          "description": "Level of hunger in the country (0-10). Higher values indicate more hunger."
+        },
+        "militaryReligion": {
+          "type": "number",
+          "description": "Level of order and social cohesion (0-10)."
+        },
+        "boardPosition": {
+          "type": "number",
+          "description": "Current position of the nation on the game board (0-20)."
+        }
+      },
+      "required": [
+        "id",
+        "gameSessionId",
+        "economy",
+        "education",
+        "wellbeing",
+        "popularSupport",
+        "hunger",
+        "militaryReligion",
+        "boardPosition"
+      ]
+    },
+    "DecisionCard": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DecisionCard",
+      "type": "object",
+      "description": "Represents a decision card with ethical choices and their consequences.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the decision card."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the decision card."
+        },
+        "dilemma": {
+          "type": "string",
+          "description": "Description of the dilemma presented by the card."
+        },
+        "ethicalChoiceEffect": {
+          "type": "string",
+          "description": "Description of the effect of the ethical choice."
+        },
+        "corruptChoiceEffect": {
+          "type": "string",
+          "description": "Description of the effect of the corrupt choice."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "dilemma",
+        "ethicalChoiceEffect",
+        "corruptChoiceEffect"
+      ]
+    },
+    "GameSessionDecisionCard": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "GameSessionDecisionCard",
+      "type": "object",
+      "description": "Represents a decision card assigned to a game session",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the game session decision card."
+        },
+        "gameSessionId": {
+          "type": "string",
+          "description": "Reference to GameSession. (Relationship: GameSession 1:N GameSessionDecisionCard)"
+        },
+        "decisionCardId": {
+          "type": "string",
+          "description": "Reference to DecisionCard. (Relationship: DecisionCard 1:N GameSessionDecisionCard)"
+        },
+        "order": {
+          "type": "number",
+          "description": "The order which the card was dealt in."
+        }
+      },
+      "required": [
+        "id",
+        "gameSessionId",
+        "decisionCardId",
+        "order"
+      ]
+    },
+    "BossEncounter": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BossEncounter",
+      "type": "object",
+      "description": "Represents a boss encounter that blocks progress on the game board.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the boss encounter."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the boss encounter (e.g., 'Fake News')."
+        },
+        "boardPosition": {
+          "type": "number",
+          "description": "The board position where the boss encounter is located."
+        },
+        "requiredEducationLevel": {
+          "type": "number",
+          "description": "The required education level to overcome the boss encounter."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "boardPosition",
+        "requiredEducationLevel"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/game_sessions/{gameSessionId}",
+        "definition": {
+          "entityName": "GameSession",
+          "schema": {
+            "$ref": "#/backend/entities/GameSession"
+          },
+          "description": "Stores metadata for each game session.",
+          "params": [
+            {
+              "name": "gameSessionId",
+              "description": "Unique identifier for the game session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/game_sessions/{gameSessionId}/players/{playerId}",
+        "definition": {
+          "entityName": "Player",
+          "schema": {
+            "$ref": "#/backend/entities/Player"
+          },
+          "description": "Stores individual player data within a specific game session. Includes denormalized 'gameSessionId'.",
+          "params": [
+            {
+              "name": "gameSessionId",
+              "description": "Unique identifier for the game session."
+            },
+            {
+              "name": "playerId",
+              "description": "Unique identifier for the player."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/game_sessions/{gameSessionId}/nation_state",
+        "definition": {
+          "entityName": "NationState",
+          "schema": {
+            "$ref": "#/backend/entities/NationState"
+          },
+          "description": "Stores the nation state data related to the game session.",
+          "params": [
+            {
+              "name": "gameSessionId",
+              "description": "Unique identifier for the game session."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/decision_cards/{decisionCardId}",
+        "definition": {
+          "entityName": "DecisionCard",
+          "schema": {
+            "$ref": "#/backend/entities/DecisionCard"
+          },
+          "description": "Stores the collection of decision cards available in the game.",
+          "params": [
+            {
+              "name": "decisionCardId",
+              "description": "Unique identifier for the decision card."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/game_sessions/{gameSessionId}/game_session_decision_cards/{gameSessionDecisionCardId}",
+        "definition": {
+          "entityName": "GameSessionDecisionCard",
+          "schema": {
+            "$ref": "#/backend/entities/GameSessionDecisionCard"
+          },
+          "description": "Stores decision cards assigned to the game session with their order in the game. Includes denormalized 'gameSessionId'.",
+          "params": [
+            {
+              "name": "gameSessionId",
+              "description": "Unique identifier for the game session."
+            },
+            {
+              "name": "gameSessionDecisionCardId",
+              "description": "Unique identifier for the game session decision card."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/boss_encounters/{bossEncounterId}",
+        "definition": {
+          "entityName": "BossEncounter",
+          "schema": {
+            "$ref": "#/backend/entities/BossEncounter"
+          },
+          "description": "Stores static information about all boss encounters in the game.",
+          "params": [
+            {
+              "name": "bossEncounterId",
+              "description": "Unique identifier for the boss encounter."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support a multiplayer game focused on ethical decision-making and resource management. It emphasizes authorization independence and clear ownership, crucial for maintaining data integrity and security within a collaborative environment. The core design revolves around segregating game sessions and player-specific data, employing denormalization where necessary to avoid complex rule evaluations. This structure allows for efficient querying, secure data access, and scalability as the application grows.\n\n*   `/game_sessions/{gameSessionId}`: Stores the metadata for each game session.\n*   `/game_sessions/{gameSessionId}/players/{playerId}`: Stores individual player data within a specific game session. This structure facilitates easy retrieval of all players associated with a game session and allows for player-specific data management. Includes denormalized `gameSessionId`.\n*   `/game_sessions/{gameSessionId}/nation_state`: Stores the nation state data related to the game session.\n*   `/decision_cards/{decisionCardId}`: Stores the collection of decision cards available in the game.\n*   `/game_sessions/{gameSessionId}/game_session_decision_cards/{gameSessionDecisionCardId}`: Stores decision cards assigned to the game session with their order in the game.\n*   `/boss_encounters/{bossEncounterId}`: Stores static information about all boss encounters in the game.\n\n**Authorization Independence and QAPs:**\n\nThis structure achieves Authorization Independence primarily through path-based ownership and data segregation. For example, player data is stored directly under the respective game session, eliminating the need to perform `get()` operations to validate the parent-child relationship. Each document inherently carries the necessary authorization context within its path, meaning security rules can be enforced solely based on the requesting user's authentication state and the document's location. All list operations are inherently secure because each collection only contains data that has the same security requirements. No additional filtering is required."
+  }
+}
