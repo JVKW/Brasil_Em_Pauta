@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { GameSession, Player } from '@/lib/types';
 import { roleDetails } from '@/lib/game-data';
@@ -40,59 +40,85 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
     const upperCaseGameCode = gameCode.toUpperCase();
     const gameSessionRef = doc(firestore, 'game_sessions', upperCaseGameCode);
 
-    try {
-      const gameDoc = await getDoc(gameSessionRef);
+    let unsubscribe: Unsubscribe | null = null;
 
-      if (!gameDoc.exists()) {
-        throw new Error("Partida não encontrada. Verifique o código.");
-      }
-
-      const gameData = gameDoc.data() as GameSession;
-      
-      const currentPlayers = gameData.players || {};
-
-      if(Object.keys(currentPlayers).length >= 4 && !currentPlayers[user.uid]) {
-         throw new Error("Esta partida já está cheia.");
-      }
-
-      // If player is not already in the game, add them.
-      if (!currentPlayers[user.uid]) {
-        const availableRoles = Object.keys(roleDetails).filter(
-          (role) => !Object.values(currentPlayers).some((p: Player) => p.role === role)
-        );
-        
-        const newPlayerRole = availableRoles.length > 0 
-          ? availableRoles[Math.floor(Math.random() * availableRoles.length)] 
-          : 'influencer';
-
-        const newPlayer: Player = {
-          id: user.uid,
-          name: playerName,
-          role: newPlayerRole,
-          isOpportunist: Math.random() < 0.25,
-          capital: 5,
-          avatar: `${Object.keys(currentPlayers).length + 1}`,
-        };
-        
-        await updateDoc(gameSessionRef, {
-            [`players.${user.uid}`]: newPlayer
-        });
-        
-        toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${gameData.gameCode}.`});
-      }
-
-      onGameJoined(upperCaseGameCode);
-
-    } catch (error: any) {
-      console.error("Error joining game:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao entrar na partida',
-        description: error.message || 'Não foi possível se conectar. Tente novamente.',
-      });
-    } finally {
+    const timeout = setTimeout(() => {
+        if(unsubscribe) unsubscribe();
         setIsLoading(false);
-    }
+        toast({
+            variant: 'destructive',
+            title: 'Erro ao entrar na partida',
+            description: 'A partida não foi encontrada. Verifique o código e tente novamente.',
+        });
+    }, 10000); // 10 second timeout
+
+    unsubscribe = onSnapshot(gameSessionRef, async (docSnap) => {
+        if (docSnap.exists()) {
+            // Document exists, proceed to join
+            clearTimeout(timeout);
+            if (unsubscribe) unsubscribe();
+
+            const gameData = docSnap.data() as GameSession;
+            const currentPlayers = gameData.players || {};
+
+            if (Object.keys(currentPlayers).length >= 4 && !currentPlayers[user.uid]) {
+                setIsLoading(false);
+                toast({ variant: "destructive", title: "Partida Cheia", description: "Esta partida já atingiu o número máximo de jogadores." });
+                return;
+            }
+
+            if (!currentPlayers[user.uid]) {
+                const availableRoles = Object.keys(roleDetails).filter(
+                    (role) => !Object.values(currentPlayers).some((p: Player) => p.role === role)
+                );
+                
+                const newPlayerRole = availableRoles.length > 0 
+                    ? availableRoles[Math.floor(Math.random() * availableRoles.length)] 
+                    : 'influencer';
+
+                const newPlayer: Player = {
+                    id: user.uid,
+                    name: playerName,
+                    role: newPlayerRole,
+                    isOpportunist: Math.random() < 0.25,
+                    capital: 5,
+                    avatar: `${Object.keys(currentPlayers).length + 1}`,
+                };
+
+                try {
+                    await updateDoc(gameSessionRef, {
+                        [`players.${user.uid}`]: newPlayer,
+                        status: Object.keys(currentPlayers).length + 1 === 4 ? 'in_progress' : 'waiting'
+                    });
+                    toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${gameData.gameCode}.` });
+                } catch(e: any) {
+                     console.error("Error joining game on update:", e);
+                     setIsLoading(false);
+                     toast({
+                        variant: 'destructive',
+                        title: 'Erro de Permissão',
+                        description: e.message || 'Não foi possível entrar na partida. Verifique as regras de segurança.',
+                     });
+                     return;
+                }
+            }
+            
+            // Whether new or existing player, proceed to game
+            onGameJoined(upperCaseGameCode);
+        }
+        // If doc doesn't exist, the listener just waits. The timeout will handle the error case.
+    }, (error) => {
+        // Handle snapshot listener error
+        console.error("Error with onSnapshot:", error);
+        clearTimeout(timeout);
+        if(unsubscribe) unsubscribe();
+        setIsLoading(false);
+        toast({
+            variant: "destructive",
+            title: "Erro de Conexão",
+            description: "Não foi possível se conectar à partida. Verifique sua conexão e tente novamente.",
+        });
+    });
   };
 
   return (
