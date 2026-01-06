@@ -2,7 +2,7 @@
 
 ## 1. Visão Geral do Projeto
 
-"Brasil em Pauta" é um jogo de tabuleiro digital multiplayer projetado como uma ferramenta educacional sobre Educação em Direitos Humanos (EDH). Nele, os jogadores assumem papéis de ministros e tomam decisões que impactam uma nação virtual, equilibrando indicadores como economia, educação e bem-estar, enquanto enfrentam dilemas éticos.
+"Brasil em Pauta" é um jogo de tabuleiro digital multiplayer projetado como uma ferramenta educacional sobre Educação em Direitos Humanos (EDH). Nele, os jogadores assumem papéis de ministros e tomam decisões que impactam uma nação virtual, equilibrando indicadores enquanto enfrentam dilemas éticos.
 
 O projeto é construído como uma aplicação web moderna, utilizando uma arquitetura cliente-servidor com um backend em tempo real para suportar a jogabilidade multiplayer.
 
@@ -10,166 +10,117 @@ O projeto é construído como uma aplicação web moderna, utilizando uma arquit
 
 - **Frontend:** Next.js (React) com TypeScript
 - **UI:** ShadCN, Tailwind CSS, Lucide React (ícones)
-- **Backend & Banco de Dados:** Firebase (Firestore para banco de dados em tempo real, Firebase Authentication para gerenciamento de usuários)
-- **Funcionalidades de IA:** Genkit (para futuras expansões, como análise de vitória)
+- **Backend & Banco de Dados:** Firebase (Firestore para banco de dados, Firebase Authentication para usuários)
+- **Funcionalidades de IA:** Genkit (para futuras expansões)
 
 ---
 
-## 2. Estrutura de Arquivos
+## 2. Arquitetura do Backend e Fluxo de Dados (Firebase)
 
-A organização do projeto segue as convenções do Next.js, separando lógica, componentes de UI, dados e configuração do backend.
+O backend é "serverless", totalmente gerenciado pelo Firebase. Esta seção detalha como cada ação do usuário interage com o backend.
 
-```
-/
-├── src/
-│   ├── app/                # Roteamento e Páginas (App Router)
-│   │   ├── page.tsx        # Ponto de entrada principal da aplicação
-│   │   ├── layout.tsx      # Layout global (inclui fontes e metadados)
-│   │   └── globals.css     # Estilos globais e variáveis de tema (Tailwind)
-│   │
-│   ├── components/         # Componentes React reutilizáveis
-│   │   ├── game/           # Componentes da tela principal do jogo (gameplay)
-│   │   ├── lobby/          # Componentes para criar/entrar em uma partida
-│   │   └── ui/             # Componentes base da UI (ShadCN)
-│   │
-│   ├── firebase/           # Configuração e hooks do Firebase
-│   │   ├── config.ts       # Chaves de configuração do projeto Firebase
-│   │   ├── index.ts        # Ponto de inicialização e exportação dos serviços
-│   │   ├── provider.tsx    # Provedor de contexto para Firebase e autenticação
-│   │   └── firestore/      # Hooks para interagir com o Firestore (useDoc, useCollection)
-│   │
-│   ├── lib/                # Lógica central, tipos e dados estáticos
-│   │   ├── game-data.ts    # Dados iniciais do jogo (jogadores, cartas, chefes)
-│   │   ├── types.ts        # Definições de tipos TypeScript para o jogo
-│   │   └── utils.ts        # Funções utilitárias (ex: `cn` para Tailwind)
-│   │
-│   └── ai/                 # Lógica de Inteligência Artificial com Genkit
-│       ├── genkit.ts       # Configuração do cliente Genkit
-│       └── flows/          # Fluxos de IA (ex: `analyze-win-conditions.ts`)
-│
-├── docs/
-│   └── backend.json        # Definição do schema do banco de dados (Firestore)
-│
-├── firestore.rules         # Regras de segurança do banco de dados Firestore
-│
-└── DOCUMENTATION.md        # Este arquivo
-```
+### 2.1. Modelo de Dados: A Partida como um Documento Único
 
-### Explicação dos Diretórios Principais:
+A principal decisão de arquitetura é tratar **cada partida como um único documento** no Firestore. Isso é diferente de um banco de dados relacional tradicional com tabelas separadas para `partidas` e `jogadores`.
 
-- **`/src/app`**: Contém as rotas da aplicação. `page.tsx` é a página principal que decide se renderiza o Lobby ou o Jogo. `layout.tsx` define a estrutura HTML base.
-- **`/src/components`**: O coração da interface.
-  - `/game`: Contém os "widgets" do tabuleiro, como `GameBoard.tsx`, `DecisionCard.tsx` e `ResourceDashboard.tsx`.
-  - `/lobby`: `CreateGameForm.tsx` e `JoinGameForm.tsx` gerenciam a entrada dos jogadores nas partidas.
-- **`/src/firebase`**: Gerencia toda a comunicação com o backend. O `provider.tsx` é crucial, pois disponibiliza o estado de autenticação do usuário e as instâncias do Firestore para toda a aplicação. Os hooks `useDoc` e `useCollection` abstraem a complexidade de ouvir dados em tempo real.
-- **`/src/lib`**: Contém a "alma" do jogo. `types.ts` define a estrutura de dados (o que é um `Player`, um `GameState`, etc.), e `game-data.ts` fornece os valores padrão para iniciar uma partida.
-- **`/docs/backend.json`**: Documenta a estrutura de dados do Firestore, servindo como um "contrato" para o backend.
+- **Coleção Principal:** `game_sessions`
+- **Documento:** Cada documento nesta coleção é uma partida completa, identificado por um `gameCode` de 6 dígitos (ex: `AB7DE1`).
 
----
+**Vantagens deste modelo:**
+- **Atômico:** Todas as informações de uma partida (jogadores, indicadores, logs) estão em um só lugar. Uma única operação de escrita (`updateDoc`) pode alterar múltiplos aspectos do jogo de forma segura.
+- **Eficiente:** O cliente só precisa "escutar" (`useDoc`) um único documento para receber todas as atualizações em tempo real.
+- **Simples de Gerenciar:** Ao reiniciar ou terminar uma partida, basta atualizar ou deletar um único documento.
 
-## 3. Roteamento e Fluxo da Aplicação
-
-O jogo possui um fluxo de tela único, gerenciado condicionalmente.
-
-1.  **Ponto de Entrada (`/`):** O arquivo `src/app/page.tsx` é a única rota.
-2.  **Autenticação Anônima:** Ao carregar a página, o `GameLobby.tsx` utiliza o `useEffect` para iniciar um login anônimo com o Firebase Auth. Isso garante que cada visitante tenha um `uid` (ID de usuário) único, mesmo sem criar uma conta.
-3.  **Estado da Partida:** `page.tsx` usa um estado `gameId`.
-    - Se `gameId` for `null`, o componente `GameLobby` é renderizado.
-    - No lobby, o jogador pode **criar** uma partida (que gera um novo documento no Firestore e define o `gameId`) ou **entrar** em uma (que valida o código e define o `gameId`).
-    - Uma vez que `gameId` é definido, o `page.tsx` renderiza o componente `GameClient`.
-4.  **Tela do Jogo:** `GameClient.tsx` recebe o `gameId` e usa esse ID para buscar e sincronizar todos os dados da partida específica do Firestore.
-
----
-
-## 4. Arquitetura do Backend (Firebase)
-
-O backend é "serverless", totalmente gerenciado pelo Firebase, o que o torna ideal para aplicações em tempo real como esta.
-
-### 4.1. Autenticação (Firebase Authentication)
-
--   **Método:** Login Anônimo.
--   **Funcionamento:** Cada usuário que abre o jogo recebe uma conta temporária e anônima. Isso é suficiente para identificá-lo unicamente dentro de uma sessão de jogo, permitindo que o sistema saiba quem está realizando qual ação. O ID do usuário (`user.uid`) é a chave para associá-lo a um jogador em uma partida.
-
-### 4.2. Banco de Dados (Firestore)
-
-O Firestore é um banco de dados NoSQL baseado em documentos, organizado em coleções. A estrutura principal do nosso jogo gira em torno de uma única coleção principal: `game_sessions`.
-
--   **Coleção Principal:** `game_sessions`
-    -   Cada **documento** nesta coleção representa uma partida única.
-    -   O **ID de cada documento** é o código de 6 dígitos que os jogadores usam para entrar no jogo (ex: `AB7DE1`).
-
-#### Estrutura de um Documento `game_session`:
-
+#### Estrutura do Documento `game_session`:
 ```json
+// /game_sessions/{gameCode}
 {
-  // game_sessions/{gameCode}
   "gameCode": "AB7DE1",
   "creatorId": "uid_do_criador",
   "status": "waiting" | "in_progress" | "completed",
   "createdAt": "timestamp",
   "boardPosition": 1,
-  "indicators": {
-    "economy": 7,
-    "education": 4,
-    "wellBeing": 5,
-    "popularSupport": 5,
-    "hunger": 2,
-    "militaryReligion": 4
-  },
+  "indicators": { ... },
   "players": {
-    "uid_jogador_1": {
-      "name": "Nome 1",
-      "role": "ministerOfEducation",
-      "capital": 5,
-      "avatar": "1",
-      "isOpportunist": false
-    },
-    "uid_jogador_2": {
-      "name": "Nome 2",
-      "role": "influencer",
-      "capital": 5,
-      "avatar": "2",
-      "isOpportunist": true
-    }
+    "uid_jogador_1": { "name": "Nome 1", "role": "ministerOfEducation", ... },
+    "uid_jogador_2": { "name": "Nome 2", "role": "influencer", ... }
   },
   "currentPlayerIndex": 0,
   "turn": 1,
   "currentCardId": "card2",
-  "log": [
-    { "id": 1, "turn": 1, "playerName": "Nome 1", ... }
-  ]
+  "logs": [ ... ]
 }
 ```
-
-**Explicação dos Campos:**
-
--   `gameCode`, `creatorId`, `status`: Metadados da partida.
--   `boardPosition`, `indicators`: Representam o **estado compartilhado da nação**, que é o mesmo para todos os jogadores. Quando um jogador faz uma escolha que afeta a economia, ele atualiza o campo `indicators.economy` neste documento.
--   `players`: Um **mapa** onde cada chave é o `uid` do jogador (fornecido pelo Firebase Auth). O valor é um objeto com os dados **individuais** daquele jogador (capital, cargo, etc.).
--   `currentPlayerIndex`, `turn`, `currentCardId`: Gerenciam o fluxo de turnos e a carta de decisão ativa.
--   `log`: Um array que armazena o histórico de ações da partida.
-
-### 4.3. Regras de Segurança (`firestore.rules`)
-
-Este é um arquivo crucial que protege o banco de dados contra acesso não autorizado. As regras implementam a seguinte lógica:
-
--   Um usuário só pode ler ou escrever em um documento de `game_session` se seu `uid` estiver presente na lista de `players` daquela sessão.
--   Isso impede que um jogador de uma partida espione ou modifique os dados de outra.
--   A criação de um jogo é permitida para qualquer usuário autenticado.
+- **`players` é um Mapa (Objeto), não uma Tabela Separada:** A chave de cada jogador é seu `uid` (ID de usuário do Firebase). Não há "chave estrangeira". O jogador *existe dentro* do documento da partida.
 
 ---
 
-## 5. Lógica Multiplayer e Sincronização em Tempo Real
+### 2.2. Detalhamento do Fluxo de Ações do Usuário
 
-A mágica do multiplayer acontece através dos **hooks de tempo real** do Firebase.
+#### Ação 1: Abrir o Jogo (Primeira Visita)
+1.  **Ação do Usuário:** Abre a URL do jogo pela primeira vez.
+2.  **Processamento no Backend (Firebase Authentication):**
+    - O aplicativo cliente chama a função `signInAnonymously` do Firebase Auth.
+    - O Firebase cria uma conta de usuário anônima e temporária, retornando um **ID de Usuário (`uid`)** único. Este `uid` é a identidade do jogador para todas as ações futuras.
+3.  **Interface:** O lobby é exibido, mostrando o `uid` do jogador.
 
-1.  **Leitura de Dados:**
-    -   O componente `GameClient` usa o hook `useDoc<GameState>` (de `/firebase/firestore/use-doc.tsx`) para "escutar" o documento da partida atual no Firestore (`game_sessions/{gameId}`).
-    -   Qualquer alteração nesse documento no banco de dados (feita por qualquer jogador) é **automaticamente** enviada para o cliente, e o hook atualiza o estado do componente, fazendo a UI re-renderizar com os novos dados.
+#### Ação 2: Criar uma Nova Partida
+1.  **Ação do Usuário:** Digita um nome (ex: "Maria") e clica em "Criar Partida".
+2.  **Processamento no Frontend/Backend:**
+    - O código do cliente (em `CreateGameForm.tsx`) gera um `gameCode` único de 6 caracteres (ex: `XJ3K9M`).
+    - Um objeto `GameSession` completo é montado em memória, contendo:
+        - `gameCode`, `creatorId` (o `uid` do jogador "Maria"), `status: 'waiting'`.
+        - O estado inicial dos indicadores (`initialGameState`).
+        - Um mapa `players` contendo apenas o criador: `{[maria_uid]: { name: "Maria", role: ..., capital: 5, ...}}`.
+    - Uma única chamada `setDoc` é feita ao Firestore para criar um novo documento em `/game_sessions/XJ3K9M` com todos os dados acima.
+3.  **Interface:** O jogador é redirecionado para a tela do jogo (`GameClient`), que agora observa as mudanças no documento `XJ3K9M`.
 
-2.  **Escrita de Dados:**
-    -   Quando um jogador toma uma decisão (`handleDecision` em `GameClient.tsx`), em vez de usar `setState`, a função calcula os novos valores para os indicadores, capital, etc.
-    -   Em seguida, ela chama a função `updateDoc` do Firestore para atualizar o documento da partida na nuvem.
-    -   Essa atualização dispara o listener em todos os clientes conectados, que recebem os novos dados e atualizam suas telas, mantendo todos sincronizados.
+#### Ação 3: Entrar em uma Partida Existente
+1.  **Ação do Usuário:** Digita um nome (ex: "João") e um código de partida (ex: `XJ3K9M`) e clica em "Entrar na Partida".
+2.  **Processamento no Frontend/Backend (`JoinGameForm.tsx`):**
+    - O código cliente chama `getDoc` para ler o documento `/game_sessions/XJ3K9M` do Firestore.
+    - **Verificações de Lógica de Negócio (no cliente):**
+        - O documento existe?
+        - O `status` do jogo é `waiting`?
+        - O número de jogadores (`Object.keys(players).length`) é menor que 4?
+        - O `uid` de "João" já não está na lista de jogadores?
+    - **Se todas as verificações passarem:**
+        - Um novo objeto de jogador para "João" é criado em memória.
+        - Um novo mapa `updatedPlayers` é criado, combinando os jogadores existentes com o novo jogador "João".
+        - Uma chamada `updateDoc` é feita para o documento `XJ3K9M`, substituindo todo o campo `players` pelo `updatedPlayers`.
+3.  **Interface:** "João" é redirecionado para a tela do jogo, que começa a observar o documento `XJ3K9M`. Os outros jogadores já na partida veem "João" aparecer no painel de jogadores instantaneamente, pois o `useDoc` deles detecta a atualização no campo `players`.
 
-Este ciclo de `updateDoc` -> `listener do useDoc` -> `re-renderização` é o que cria a experiência multiplayer em tempo real.
+#### Ação 4: Tomar uma Decisão no Jogo
+1.  **Ação do Usuário:** É a vez do jogador "Maria". Ela clica em uma opção de decisão.
+2.  **Processamento no Frontend/Backend (`GameClient.tsx`):**
+    - A função `handleDecision` é chamada.
+    - O código do cliente calcula os **novos valores** para os indicadores, capital do jogador, posição no tabuleiro, etc., com base nos efeitos da decisão e no cargo da "Maria".
+    - Ele também determina o `nextPlayerIndex` e, se necessário, avança o `turn`.
+    - Um novo `currentCardId` é sorteado.
+    - Uma única e atômica chamada `updateDoc` é feita para o documento da partida, atualizando **todos** os campos que mudaram de uma só vez: `indicators`, `players` (o capital da Maria), `boardPosition`, `currentPlayerIndex`, `turn`, `currentCardId`, e adicionando uma entrada ao `log`.
+3.  **Sincronização em Tempo Real:**
+    - A atualização no Firestore é propagada para todos os clientes que estão "escutando" aquele documento.
+    - O hook `useDoc` em todos os navegadores (de todos os jogadores) recebe os novos dados.
+    - O React re-renderiza os componentes (`ResourceDashboard`, `PlayerDashboard`, etc.) com os novos valores.
+    - O resultado é que todos os jogadores veem os indicadores mudarem, a coroa passar para o próximo jogador, e a carta de decisão mudar, tudo em tempo real e de forma sincronizada.
+
+#### Ação 5: Reiniciar a Partida
+1.  **Ação do Usuário:** Qualquer jogador clica no botão "Reiniciar".
+2.  **Processamento no Frontend/Backend (`GameClient.tsx`):**
+    - A função `handleRestart` é chamada.
+    - Um novo objeto de estado de jogo é montado, similar ao `initialGameState`, mas preservando o `gameCode`, `creatorId`, e o criador original no mapa de `players` (com capital resetado). Todos os outros jogadores são removidos. O status volta para `'waiting'`.
+    - Uma chamada `updateDoc` sobrescreve os campos do documento da partida com este novo estado inicial.
+3.  **Interface:** A tela de todos os jogadores é resetada para o estado de "lobby de espera" dentro da mesma partida, pois o `useDoc` detectou a mudança de status e a remoção dos jogadores. Novos jogadores podem agora entrar usando o mesmo código.
+
+### 2.3. Regras de Segurança (`firestore.rules`)
+
+As regras de segurança são a camada final que protege o banco de dados contra manipulação.
+
+- **Leitura (`get`, `list`):** Qualquer usuário autenticado pode ler os dados de qualquer partida. Isso é necessário para que o `JoinGameForm` possa verificar o status de uma partida antes de tentar entrar.
+- **Criação (`create`):** Qualquer usuário autenticado pode criar uma nova partida.
+- **Atualização (`update`):** Um usuário só pode atualizar um documento de partida se:
+    1.  Ele já for um jogador naquela partida (seu `uid` está no mapa `players`). Isso permite que jogadores ativos façam seus movimentos.
+    2.  OU a partida estiver no estado `'waiting'`. Isso permite que novos jogadores se adicionem ao mapa `players`.
+- **Exclusão (`delete`):** Apenas o criador original da partida (`creatorId`) pode deletar o documento.
+
+Este sistema garante que apenas jogadores válidos possam interagir com uma partida em andamento, enquanto mantém o lobby aberto para novos participantes.
