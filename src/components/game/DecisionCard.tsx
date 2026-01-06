@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DecisionCard, DecisionOption, Player, Indicator } from "@/lib/types";
 import { roleDetails, indicatorDetails } from "@/lib/game-data";
-import { Loader2, ArrowUp, Coins, HelpCircle, ArrowDown, ArrowRight } from "lucide-react";
+import { Loader2, ArrowUp, Coins, HelpCircle, ArrowDown, ArrowRight, Hourglass } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +51,20 @@ const getEffectText = (option: DecisionOption): {text: string, type: string, cha
 
 export default function DecisionCardComponent({ card, onDecision, isProcessing, currentPlayer }: DecisionCardProps) {
   const playerRole = roleDetails[currentPlayer.role];
+
+  const isDisabled = isProcessing || (currentPlayer.name === 'Aguardando...' && currentPlayer.role === 'influencer');
+  
+  if (isDisabled && isProcessing) {
+    return (
+      <Card className="shadow-2xl border-primary/20 bg-card/80 backdrop-blur-sm border-2 flex flex-col h-full overflow-hidden items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center p-6">
+          <Hourglass className="h-12 w-12 text-primary animate-pulse" />
+          <h2 className="text-xl font-headline text-accent">Aguardando Início</h2>
+          <p className="text-muted-foreground">A partida começará assim que 4 jogadores estiverem no lobby.</p>
+        </div>
+      </Card>
+    );
+  }
   
   return (
     <Card className="shadow-2xl border-primary/20 bg-card/80 backdrop-blur-sm border-2 flex flex-col h-full overflow-hidden">
@@ -95,5 +109,3 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
     </Card>
   );
 }
-
-    

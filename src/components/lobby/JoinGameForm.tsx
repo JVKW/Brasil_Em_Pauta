@@ -54,7 +54,6 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
 
     unsubscribe = onSnapshot(gameSessionRef, async (docSnap) => {
         if (docSnap.exists()) {
-            // Document exists, proceed to join
             clearTimeout(timeout);
             if (unsubscribe) unsubscribe();
 
@@ -87,8 +86,7 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
 
                 try {
                     await updateDoc(gameSessionRef, {
-                        [`players.${user.uid}`]: newPlayer,
-                        status: Object.keys(currentPlayers).length + 1 === 4 ? 'in_progress' : 'waiting'
+                        [`players.${user.uid}`]: newPlayer
                     });
                     toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${gameData.gameCode}.` });
                 } catch(e: any) {
@@ -103,12 +101,9 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
                 }
             }
             
-            // Whether new or existing player, proceed to game
             onGameJoined(upperCaseGameCode);
         }
-        // If doc doesn't exist, the listener just waits. The timeout will handle the error case.
     }, (error) => {
-        // Handle snapshot listener error
         console.error("Error with onSnapshot:", error);
         clearTimeout(timeout);
         if(unsubscribe) unsubscribe();

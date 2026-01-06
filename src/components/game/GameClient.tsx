@@ -54,6 +54,19 @@ export default function GameClient({ gameId }: GameClientProps) {
     }
   }, [gameSession, firestore, gameSessionRef, user?.uid]);
 
+  // Effect to start the game when 4 players have joined
+  useEffect(() => {
+    if (gameSession && user && gameSessionRef) {
+      const playersCount = Object.keys(gameSession.players || {}).length;
+      // The creator is responsible for changing the game status
+      if (user.uid === gameSession.creatorId && playersCount === 4 && gameSession.status === 'waiting') {
+        updateDoc(gameSessionRef, { status: 'in_progress' }).then(() => {
+           toast({ title: "A partida começou!", description: "Todos os 4 jogadores estão presentes. Que comecem as decisões!" });
+        });
+      }
+    }
+  }, [gameSession, user, gameSessionRef, toast]);
+
 
   const players = useMemo(() => gameSession?.players ? Object.values(gameSession.players) : [], [gameSession?.players]);
   const currentPlayer = useMemo(() => {
@@ -260,7 +273,7 @@ export default function GameClient({ gameId }: GameClientProps) {
             <DecisionCardComponent
               card={currentCard}
               onDecision={handleDecision}
-              isProcessing={isProcessing || !isCurrentPlayerTurn}
+              isProcessing={isProcessing || !isCurrentPlayerTurn || gameSession.status !== 'in_progress'}
               currentPlayer={currentPlayer}
             />
           </div>
@@ -277,7 +290,3 @@ export default function GameClient({ gameId }: GameClientProps) {
     </div>
   );
 }
-
-    
-
-    
