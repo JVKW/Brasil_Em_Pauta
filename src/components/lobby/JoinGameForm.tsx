@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { GameSession, Player } from '@/lib/types';
 import { roleDetails } from '@/lib/game-data';
@@ -50,20 +50,22 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
         const gameData = docSnap.data() as GameSession;
         const currentPlayers = gameData.players || {};
 
+        // If player is already in, just proceed to game
+        if (currentPlayers[user.uid]) {
+            toast({ title: `Bem-vindo de volta, ${currentPlayers[user.uid].name}!` });
+            onGameJoined(upperCaseGameCode);
+            setIsLoading(false);
+            return;
+        }
+
         if (gameData.status !== 'waiting') {
             throw new Error("Esta partida já começou ou foi concluída.");
         }
 
-        if (Object.keys(currentPlayers).length >= 4 && !currentPlayers[user.uid]) {
+        if (Object.keys(currentPlayers).length >= 4) {
             throw new Error("Esta partida já atingiu o número máximo de 4 jogadores.");
         }
         
-        // If player is already in, just proceed
-        if (currentPlayers[user.uid]) {
-            onGameJoined(upperCaseGameCode);
-            return;
-        }
-
         const availableRoles = Object.keys(roleDetails).filter(
             (role) => !Object.values(currentPlayers).some((p: Player) => p.role === role)
         );
@@ -80,7 +82,9 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
             capital: 5,
             avatar: `${Object.keys(currentPlayers).length + 1}`,
         };
-
+        
+        // This is the correct, atomic way to update a nested object.
+        // We create the new players map in memory and set it in the document.
         const updatedPlayers = {
             ...currentPlayers,
             [user.uid]: newPlayer
