@@ -55,12 +55,13 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           throw new Error("Esta partida já está cheia.");
       }
 
+      // Only add the player if they are not already in the game
       if (!currentPlayers[user.uid]) {
         const availableRoles = Object.keys(roleDetails).filter(
-          (role) => !Object.values(currentPlayers).some((p) => p.role === role)
+          (role) => !Object.values(currentPlayers).some((p: any) => p.role === role)
         );
         const newPlayerRole = availableRoles.length > 0 ? availableRoles[Math.floor(Math.random() * availableRoles.length)] : 'influencer';
-
+        
         const newPlayer = {
           id: user.uid,
           name: playerName,
@@ -75,12 +76,16 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           [`players.${user.uid}`]: newPlayer
         });
 
+        toast({
+          title: 'Você entrou no jogo!',
+          description: `Bem-vindo à partida ${upperCaseGameCode}.`,
+        });
+      } else {
+        toast({
+          title: 'Você já está no jogo!',
+          description: `Reconectando à partida ${upperCaseGameCode}.`,
+        });
       }
-      
-      toast({
-        title: 'Você entrou no jogo!',
-        description: `Bem-vindo à partida ${upperCaseGameCode}.`,
-      });
 
       onGameJoined(upperCaseGameCode);
 
