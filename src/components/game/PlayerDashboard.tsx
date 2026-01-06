@@ -24,6 +24,11 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
         <ScrollArea className="h-full p-2 pt-0">
         <div className="space-y-2">
           {players.map((player) => {
+            // Defensive check to prevent crash if player or player.name is temporarily undefined
+            if (!player || !player.name) {
+              return null;
+            }
+
             const details = roleDetails[player.role];
             const avatarImage = PlaceHolderImages.find(p => p.id === player.avatar);
             const isCurrentPlayer = player.id === currentPlayerId;
