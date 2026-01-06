@@ -1,3 +1,4 @@
+
 /**
  * Core Philosophy:
  * This ruleset enforces a collaborative, session-based security model for a multiplayer game.
@@ -60,10 +61,10 @@ service cloud.firestore {
     
     /**
      * Checks if the game session is in a 'waiting' state and has room for more players.
+     * It checks the existing document in the database, not the incoming request data.
      */
     function isGameJoinable(gameSessionId) {
       let game = get(/databases/$(database)/documents/game_sessions/$(gameSessionId)).data;
-      // Use .keys().size() to correctly get the size of the players map.
       return game.status == 'waiting' && game.players.keys().size() < 4;
     }
 
