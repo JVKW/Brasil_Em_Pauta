@@ -51,7 +51,7 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
       
       const currentPlayers = gameData.players || {};
 
-      if (Object.keys(currentPlayers).length >= 4) {
+      if (Object.keys(currentPlayers).length >= 4 && !currentPlayers[user.uid]) {
           throw new Error("Esta partida já está cheia.");
       }
 
@@ -70,8 +70,8 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
           avatar: `${Object.keys(currentPlayers).length + 1}`,
         };
         
-        // Use dot notation to update a specific field within the document.
-        // This is the most reliable way to update nested objects.
+        // This is the correct way to update a nested field in Firestore.
+        // It uses dot notation within a string to specify the path.
         await updateDoc(gameSessionRef, {
           [`players.${user.uid}`]: newPlayer
         });
