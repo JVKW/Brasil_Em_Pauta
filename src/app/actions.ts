@@ -4,7 +4,7 @@ import { analyzeWinConditions, AnalyzeWinConditionsInput, AnalyzeWinConditionsOu
 import type { GameSession, Player } from '@/lib/types';
 import { initialBosses } from '@/lib/game-data';
 
-const FINAL_BOSS_POSITION = initialBosses.find(b => b.name === 'Desigualdade')?.position || 20;
+const FINAL_BOSS_POSITION = 25;
 
 export async function checkWinConditionsAction(gameSession: GameSession): Promise<{ isGameOver: boolean; message: string; }> {
   
