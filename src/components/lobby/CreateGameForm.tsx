@@ -36,11 +36,14 @@ export default function CreateGameForm({ userUid, playerName, onPlayerNameChange
         body: JSON.stringify({ userUid, playerName }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Falha ao criar o jogo');
+        // Handle non-successful responses gracefully
+        const errorResult = await response.json().catch(() => null); // Gracefully handle non-JSON error bodies
+        const errorMessage = errorResult?.error || `Erro ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
+      
+      const result = await response.json();
       
       toast({
         title: 'Jogo Criado!',
