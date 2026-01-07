@@ -201,11 +201,11 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
               <ResourceDashboard indicators={indicators} />
               <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} currentBoss={currentBoss} />
             </div>
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden min-h-0">
-              <div className="lg:col-span-3 flex flex-col overflow-hidden">
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-y-auto min-h-0">
+              <div className="lg:col-span-3 flex flex-col">
                 <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
               </div>
-              <div className="lg:col-span-6 flex flex-col overflow-hidden">
+              <div className="lg:col-span-6 flex flex-col">
                 {isWaiting ? (
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -237,7 +237,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
                     </div>
                 )}
               </div>
-              <div className="lg:col-span-3 flex flex-col overflow-hidden">
+              <div className="lg:col-span-3 flex flex-col">
                 <LogPanel logs={gameSession.logs || []} />
               </div>
             </div>
@@ -245,7 +245,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
 
         {/* Mobile Layout */}
         <div className="lg:hidden flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 flex flex-col overflow-hidden mb-2">
+            <div className="flex-1 flex flex-col min-h-0 mb-2">
                  {isWaiting ? (
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />

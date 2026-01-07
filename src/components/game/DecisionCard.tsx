@@ -1,10 +1,10 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DecisionCard, Player, Difficulty } from "@/lib/types";
 import { roleDetails, indicatorDetails } from "@/lib/game-data";
-import { Loader2, Coins, HelpCircle, ArrowUp, Circle, ArrowDown } from "lucide-react";
+import { Coins, HelpCircle, ArrowUp, Circle, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type DecisionCardProps = {
   card: DecisionCard;
@@ -121,49 +121,57 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
             {difficulty === 'easy' && (
                 <Badge variant="outline" className="shrink-0 bg-background/50">Fácil</Badge>
             )}
+             {difficulty === 'medium' && (
+                <Badge variant="outline" className="shrink-0 bg-background/50">Médio</Badge>
+            )}
+             {difficulty === 'hard' && (
+                <Badge variant="outline" className="shrink-0 bg-background/50">Difícil</Badge>
+            )}
         </div>
         <CardDescription className="text-base md:text-lg pt-4 text-foreground/90 font-body leading-relaxed border-l-4 border-primary/40 pl-4 my-2">
           {card.dilemma}
         </CardDescription>
       </CardHeader>
       
-      <CardContent className="flex-grow grid grid-cols-1 gap-4 p-4 md:p-6">
-        {card.options.map((option, index) => (
-            <button 
-                key={index} 
-                onClick={() => onDecision(index)}
-                disabled={isProcessing || !isMyTurn}
-                className={cn(
-                    "relative flex flex-col rounded-xl border-2 bg-card p-5 text-left transition-all duration-200 group overflow-hidden",
-                    // Estados de Hover e Focus
-                    "hover:border-primary hover:shadow-lg hover:translate-y-[-2px]",
-                    "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
-                    // Estado Desabilitado
-                    "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:border-border disabled:hover:shadow-none",
-                    // Estilização condicional baseada na dificuldade para dar pistas visuais sutis
-                    difficulty === 'easy' ? "border-border/60" : "border-border/40"
-                )}
-            >
-                {/* Efeito de fundo no hover */}
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <CardContent className="flex-grow p-4 md:p-6 overflow-y-auto">
+        <div className="grid grid-cols-1 gap-4">
+          {card.options.map((option, index) => (
+              <button 
+                  key={index} 
+                  onClick={() => onDecision(index)}
+                  disabled={isProcessing || !isMyTurn}
+                  className={cn(
+                      "relative flex flex-col rounded-xl border-2 bg-card p-5 text-left transition-all duration-200 group overflow-hidden",
+                      // Estados de Hover e Focus
+                      "hover:border-primary hover:shadow-lg hover:translate-y-[-2px]",
+                      "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                      // Estado Desabilitado
+                      "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:border-border disabled:hover:shadow-none",
+                      // Estilização condicional baseada na dificuldade para dar pistas visuais sutis
+                      difficulty === 'easy' ? "border-border/60" : "border-border/40"
+                  )}
+              >
+                  {/* Efeito de fundo no hover */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                <div className="relative z-10 w-full">
-                    <h3 className="font-bold text-lg md:text-xl text-foreground mb-1 group-hover:text-primary transition-colors">
-                        {option.text}
-                    </h3>
-                    
-                    {difficulty !== 'hard' && (
-                        <>
-                            <div className="w-full h-px bg-border/50 my-3 group-hover:bg-primary/30 transition-colors" />
-                            <p className="text-xs font-semibold text-muted-foreground mb-0.5">
-                                {difficulty === 'easy' ? 'Efeitos previstos:' : 'Consequências:'}
-                            </p>
-                            <EffectDisplay effect={option.effect} difficulty={difficulty} />
-                        </>
-                    )}
-                </div>
-            </button>
-        ))}
+                  <div className="relative z-10 w-full">
+                      <h3 className="font-bold text-lg md:text-xl text-foreground mb-1 group-hover:text-primary transition-colors">
+                          {option.text}
+                      </h3>
+                      
+                      {difficulty !== 'hard' && (
+                          <>
+                              <div className="w-full h-px bg-border/50 my-3 group-hover:bg-primary/30 transition-colors" />
+                              <p className="text-xs font-semibold text-muted-foreground mb-0.5">
+                                  {difficulty === 'easy' ? 'Efeitos previstos:' : 'Consequências:'}
+                              </p>
+                              <EffectDisplay effect={option.effect} difficulty={difficulty} />
+                          </>
+                      )}
+                  </div>
+              </button>
+          ))}
+        </div>
       </CardContent>
 
        <CardFooter className="bg-secondary/5 border-t border-border/10 py-4">
