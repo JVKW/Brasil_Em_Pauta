@@ -61,7 +61,7 @@ export default function GameBoard({ boardPosition, bosses }: GameBoardProps) {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Casa {step}</p>
-                      {boss && <p className="font-bold text-destructive">Chefe: {boss.name} (Requer {indicatorDetails[boss.requirement.indicator as Indicator].name} {`>= ${boss.requirement.level}`})</p>}
+                      {boss && <p className="font-bold text-destructive">Chefe: {boss.name} (Requer {indicatorDetails[boss.requirement.indicator as keyof typeof indicatorDetails]?.name || boss.requirement.indicator} {`>= ${boss.requirement.level}`})</p>}
                       {step === TOTAL_STEPS && <p className="font-bold text-amber-500">Justiça Social!</p>}
                     </TooltipContent>
                   </Tooltip>

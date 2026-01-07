@@ -2,16 +2,15 @@
 'use server';
 
 import { analyzeWinConditions, AnalyzeWinConditionsInput, AnalyzeWinConditionsOutput } from '@/ai/flows/analyze-win-conditions';
-import type { GameState, Player } from '@/lib/types';
+import type { NationState, Player } from '@/lib/types';
 import { initialBosses } from '@/lib/game-data';
 
 const FINAL_BOSS_POSITION = initialBosses.find(b => b.name === 'Desigualdade')?.position || 20;
 
-export async function checkWinConditionsAction(gameState: GameState, players: Player[]): Promise<{ isGameOver: boolean; message: string; }> {
-  const { indicators, boardPosition } = gameState;
-
+export async function checkWinConditionsAction(indicators: NationState, players: Player[]): Promise<{ isGameOver: boolean; message: string; }> {
+  
   // 1. Check for immediate loss conditions
-  const nonHungerIndicators = ['economy', 'education', 'wellBeing', 'popularSupport', 'militaryReligion'] as const;
+  const nonHungerIndicators = ['economy', 'education', 'wellbeing', 'popular_support', 'military_religion'] as const;
   const anyIndicatorAtOrBelowZero = nonHungerIndicators.some(key => indicators[key] <= 0);
 
   if (anyIndicatorAtOrBelowZero) {
@@ -26,10 +25,10 @@ export async function checkWinConditionsAction(gameState: GameState, players: Pl
   const input: AnalyzeWinConditionsInput = {
     economy: indicators.economy,
     education: indicators.education,
-    wellBeing: indicators.wellBeing,
-    popularSupport: indicators.popularSupport,
+    wellBeing: indicators.wellbeing,
+    popularSupport: indicators.popular_support,
     hunger: indicators.hunger,
-    militaryReligion: indicators.militaryReligion,
+    militaryReligion: indicators.military_religion,
     capital: opportunist ? opportunist.capital : 0,
     isOpportunist: !!opportunist,
   };
@@ -42,7 +41,7 @@ export async function checkWinConditionsAction(gameState: GameState, players: Pl
       return { isGameOver: true, message: `O Oportunista venceu! Com o povo alienado, ${opportunist?.name} acumulou poder e riqueza.` };
     }
     
-    const hasReachedFinalBoss = boardPosition >= FINAL_BOSS_POSITION;
+    const hasReachedFinalBoss = indicators.board_position >= FINAL_BOSS_POSITION;
     if (hasReachedFinalBoss && result.collectiveVictory) {
       return { isGameOver: true, message: "Vitória Coletiva! A nação prosperou e alcançou a Justiça Social!" };
     }
@@ -53,7 +52,7 @@ export async function checkWinConditionsAction(gameState: GameState, players: Pl
     if (opportunistWin) {
         return { isGameOver: true, message: `O Oportunista venceu! Com o povo alienado, ${opportunist?.name} acumulou poder e riqueza.` };
     }
-    const collectiveWin = boardPosition >= FINAL_BOSS_POSITION && Object.values(indicators).every(v => v > 7);
+    const collectiveWin = indicators.board_position >= FINAL_BOSS_POSITION && Object.values(indicators).every(v => v > 7);
     if(collectiveWin) {
         return { isGameOver: true, message: "Vitória Coletiva! A nação prosperou e alcançou a Justiça Social!" };
     }

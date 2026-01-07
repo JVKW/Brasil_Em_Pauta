@@ -5,20 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
-import { GameSession, Player } from '@/lib/types';
-import { roleDetails } from '@/lib/game-data';
+import { API_BASE_URL } from '@/lib/api';
 
 interface JoinGameFormProps {
-  onGameJoined: (gameId: string) => void;
+  userUid: string;
+  playerName: string;
+  onPlayerNameChange: (name: string) => void;
+  onGameJoined: (gameId: string, playerName: string) => void;
 }
 
-export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
+export default function JoinGameForm({ userUid, playerName, onPlayerNameChange, onGameJoined }: JoinGameFormProps) {
   const [gameCode, setGameCode] = useState('');
-  const [playerName, setPlayerName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
   const handleJoinGame = async () => {
@@ -30,74 +28,29 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
       toast({ variant: 'destructive', title: 'Nome inválido', description: 'Por favor, insira seu nome para entrar.' });
       return;
     }
-
-    if (!firestore || !user) {
-      toast({ variant: 'destructive', title: 'Erro de autenticação', description: 'Você precisa estar logado para entrar em um jogo.' });
-      return;
-    }
     
     setIsLoading(true);
     const upperCaseGameCode = gameCode.toUpperCase();
-    const gameSessionRef = doc(firestore, 'game_sessions', upperCaseGameCode);
 
     try {
-        const docSnap = await getDoc(gameSessionRef);
+      const response = await fetch(`${API_BASE_URL}/game/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameCode: upperCaseGameCode, userUid, playerName }),
+      });
+      
+      const result = await response.json();
 
-        if (!docSnap.exists()) {
-            throw new Error("Partida não encontrada. Verifique o código e tente novamente.");
-        }
+      if (!response.ok) {
+        throw new Error(result.error || "Falha ao entrar na partida.");
+      }
 
-        const gameData = docSnap.data() as GameSession;
-        const currentPlayers = gameData.players || {};
-
-        // If player is already in, just proceed to game
-        if (currentPlayers[user.uid]) {
-            toast({ title: `Bem-vindo de volta, ${currentPlayers[user.uid].name}!` });
-            onGameJoined(upperCaseGameCode);
-            setIsLoading(false);
-            return;
-        }
-
-        if (gameData.status !== 'waiting') {
-            throw new Error("Esta partida já começou ou foi concluída.");
-        }
-
-        if (Object.keys(currentPlayers).length >= 4) {
-            throw new Error("Esta partida já atingiu o número máximo de 4 jogadores.");
-        }
-        
-        const availableRoles = Object.keys(roleDetails).filter(
-            (role) => !Object.values(currentPlayers).some((p: Player) => p.role === role)
-        );
-        
-        const newPlayerRole = availableRoles.length > 0 
-            ? availableRoles[Math.floor(Math.random() * availableRoles.length)] 
-            : 'influencer'; // Fallback role
-
-        const newPlayer: Player = {
-            id: user.uid,
-            name: playerName,
-            role: newPlayerRole,
-            isOpportunist: Math.random() < 0.25,
-            capital: 5,
-            avatar: `${Object.keys(currentPlayers).length + 1}`,
-        };
-        
-        // This is the correct, atomic way to update a nested object.
-        // We create the new players map in memory and set it in the document.
-        const updatedPlayers = {
-            ...currentPlayers,
-            [user.uid]: newPlayer
-        };
-        
-        await updateDoc(gameSessionRef, { players: updatedPlayers });
-
-        toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${gameData.gameCode}.` });
-        onGameJoined(upperCaseGameCode);
+      toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${upperCaseGameCode}.` });
+      onGameJoined(upperCaseGameCode, playerName);
 
     } catch (error: any) {
-        console.error("Error joining game:", error);
-        toast({
+      console.error("Error joining game:", error);
+      toast({
             variant: 'destructive',
             title: 'Erro ao entrar na partida',
             description: error.message || 'Ocorreu um problema ao tentar entrar na partida.',
@@ -114,11 +67,12 @@ export default function JoinGameForm({ onGameJoined }: JoinGameFormProps) {
         type="text"
         placeholder="Seu nome (será usado na partida)"
         value={playerName}
-        onChange={(e) => setPlayerName(e.target.value)}
+        onChange={(e) => onPlayerNameChange(e.target.value)}
         className="text-center"
       />
       <Input
         type="text"
+
         placeholder="Insira o código da partida"
         value={gameCode}
         onChange={(e) => setGameCode(e.target.value)}

@@ -5,18 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { doc, setDoc } from 'firebase/firestore';
-import { useFirebase } from '@/firebase';
-import { initialCards, initialGameState, roleDetails } from '@/lib/game-data';
+import { API_BASE_URL } from '@/lib/api';
 
 interface CreateGameFormProps {
-  onGameCreated: (gameId: string) => void;
+  userUid: string;
+  playerName: string;
+  onPlayerNameChange: (name: string) => void;
+  onGameCreated: (gameId: string, playerName: string) => void;
 }
 
-export default function CreateGameForm({ onGameCreated }: CreateGameFormProps) {
+export default function CreateGameForm({ userUid, playerName, onPlayerNameChange, onGameCreated }: CreateGameFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [playerName, setPlayerName] = useState('');
-  const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
   const handleCreateGame = async () => {
@@ -29,53 +28,25 @@ export default function CreateGameForm({ onGameCreated }: CreateGameFormProps) {
       return;
     }
     
-    if (!firestore || !user) {
-      toast({
-        variant: 'destructive',
-        title: 'Erro de autenticação',
-        description: 'Você precisa estar logado para criar um jogo.',
-      });
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const gameCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const gameSessionRef = doc(firestore, 'game_sessions', gameCode);
+      const response = await fetch(`${API_BASE_URL}/game/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userUid, playerName }),
+      });
 
-      const randomCard = initialCards[Math.floor(Math.random() * initialCards.length)];
-      const roles = Object.keys(roleDetails);
-      const randomRole = roles[Math.floor(Math.random() * roles.length)];
+      const result = await response.json();
 
-      const gameSessionData = {
-        ...initialGameState,
-        gameCode,
-        creatorId: user.uid,
-        status: 'waiting',
-        createdAt: new Date().toISOString(),
-        players: {
-          [user.uid]: {
-            id: user.uid,
-            name: playerName,
-            role: randomRole,
-            isOpportunist: Math.random() < 0.25, // 25% chance
-            capital: 5,
-            avatar: '1',
-          },
-        },
-        turn: 1,
-        currentPlayerIndex: 0,
-        currentCardId: randomCard.id,
-        logs: [],
-      };
-
-      await setDoc(gameSessionRef, gameSessionData);
+      if (!response.ok) {
+        throw new Error(result.error || 'Falha ao criar o jogo');
+      }
       
       toast({
         title: 'Jogo Criado!',
-        description: `O código da partida é: ${gameCode}`,
+        description: `O código da partida é: ${result.gameCode}`,
       });
-      onGameCreated(gameCode);
+      onGameCreated(result.gameCode, playerName);
 
     } catch (error: any) {
       console.error("Error creating game:", error);
@@ -84,7 +55,8 @@ export default function CreateGameForm({ onGameCreated }: CreateGameFormProps) {
         title: 'Erro ao criar o jogo',
         description: error.message || 'Ocorreu um problema ao tentar criar a partida.',
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -95,7 +67,7 @@ export default function CreateGameForm({ onGameCreated }: CreateGameFormProps) {
         type="text"
         placeholder="Seu nome"
         value={playerName}
-        onChange={(e) => setPlayerName(e.target.value)}
+        onChange={(e) => onPlayerNameChange(e.target.value)}
         className="text-center"
       />
       <Button onClick={handleCreateGame} disabled={isLoading || !playerName}>

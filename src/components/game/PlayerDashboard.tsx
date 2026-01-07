@@ -24,12 +24,11 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
         <ScrollArea className="h-full p-2 pt-0">
         <div className="space-y-2">
           {players.map((player) => {
-            // Defensive check to prevent crash if player or player.name is temporarily undefined
             if (!player || !player.name) {
               return null;
             }
 
-            const details = roleDetails[player.role];
+            const details = roleDetails[player.character_role];
             const avatarImage = PlaceHolderImages.find(p => p.id === player.avatar);
             const isCurrentPlayer = player.id === currentPlayerId;
 
@@ -47,7 +46,7 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
                       </Avatar>
                       <div className="flex-grow overflow-hidden">
                         <p className="text-sm font-bold text-foreground truncate">{player.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{details.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{details?.name || 'Função desconhecida'}</p>
                          <div className="flex items-center text-xs mt-1">
                             <Coins className="h-3 w-3 mr-1 text-amber-500" />
                             <span className="font-semibold">{player.capital}</span>
@@ -60,10 +59,12 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
                       )}
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="font-bold">{details.name}</p>
-                    <p>{details.description}</p>
-                  </TooltipContent>
+                  {details && (
+                    <TooltipContent>
+                        <p className="font-bold">{details.name}</p>
+                        <p>{details.description}</p>
+                    </TooltipContent>
+                  )}
                 </Tooltip>
               </TooltipProvider>
             );

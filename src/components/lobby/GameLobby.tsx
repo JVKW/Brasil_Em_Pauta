@@ -1,36 +1,20 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useUser, useAuth } from '@/firebase';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { useState } from 'react';
 import CreateGameForm from './CreateGameForm';
 import JoinGameForm from './JoinGameForm';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Scale } from 'lucide-react';
+import { Scale } from 'lucide-react';
 
 interface GameLobbyProps {
-  onGameJoined: (gameId: string) => void;
+  userUid: string;
+  defaultPlayerName: string;
+  onGameJoined: (gameId: string, playerName: string) => void;
 }
 
-export default function GameLobby({ onGameJoined }: GameLobbyProps) {
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-      initiateAnonymousSignIn(auth);
-    }
-  }, [user, isUserLoading, auth]);
-
-  if (isUserLoading || !user) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Autenticando...</p>
-      </div>
-    );
-  }
+export default function GameLobby({ userUid, defaultPlayerName, onGameJoined }: GameLobbyProps) {
+    const [playerName, setPlayerName] = useState(defaultPlayerName);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -48,13 +32,23 @@ export default function GameLobby({ onGameJoined }: GameLobbyProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <CreateGameForm onGameCreated={onGameJoined} />
+          <CreateGameForm 
+            userUid={userUid} 
+            playerName={playerName} 
+            onPlayerNameChange={setPlayerName} 
+            onGameCreated={onGameJoined} 
+          />
           <Separator />
-          <JoinGameForm onGameJoined={onGameJoined} />
+          <JoinGameForm 
+            userUid={userUid}
+            playerName={playerName}
+            onPlayerNameChange={setPlayerName}
+            onGameJoined={onGameJoined}
+          />
         </CardContent>
       </Card>
       <footer className="mt-8 text-sm text-muted-foreground">
-        Você está logado como: {user.isAnonymous ? 'Anônimo' : user.email} (ID: {user.uid.substring(0,6)}...)
+        Seu ID de sessão: ({userUid.substring(0,15)}...)
       </footer>
     </div>
   );
