@@ -5,34 +5,39 @@ export type Indicator = 'economy' | 'education' | 'wellbeing' | 'popular_support
 export type Indicators = Record<Indicator, number>;
 
 export type Role = 
-  | 'ministerOfEducation' 
-  | 'economyManager'
-  | 'agriculture'
-  | 'religious'
-  | 'influencer'
-  | 'militaryCommander'
-  | 'Presidente'; // Added from API data
+  | 'Presidente'
+  | 'Ministro' 
+  | 'General'
+  | 'Opositor'
+  | 'Empresário'
+  | 'Jornalista'
+  | 'Cidadão';
 
 export type Player = {
   id: string;
-  game_session_id?: string; // This is not in the player object from API
+  session_id: string;
   user_uid: string;
-  name: string;
+  nickname: string;
   character_role: Role;
-  capital: number | string; // API returns string "50.00"
+  capital: number | string;
+  turn_order: number;
   avatar?: string;
   isOpportunist?: boolean;
 };
 
 export type DecisionEffect = Record<string, number>;
 
+export type DecisionOption = {
+  text: string;
+  effect: DecisionEffect;
+}
+
 export type DecisionCard = {
-  id: string; // or session_card_id from API
+  id?: string;
   title: string;
   dilemma: string;
-  ethical_choice_effect: DecisionEffect;
-  corrupt_choice_effect: DecisionEffect;
-  session_card_id?: string; // From API
+  options: DecisionOption[];
+  session_card_id?: string;
 };
 
 export type Boss = {
@@ -61,14 +66,14 @@ export type LogEntry = {
 };
 
 // Represents the entire state of a game session from GET /game/:gameCode
-// This is now a flattened structure based on the new API.
 export type GameSession = {
-  session_id: string;
+  id: string;
   game_code: string;
   status: 'waiting' | 'in_progress' | 'finished';
   creator_user_uid: string;
   current_turn: number;
   current_player_index: number;
+  end_reason?: string;
   
   // Nation state properties are now at the top level
   economy: number;
@@ -81,11 +86,7 @@ export type GameSession = {
   
   // Nested data from the API
   players: Player[];
-  currentCard: DecisionCard | null; // Renamed from current_card
+  currentCard: DecisionCard | null;
   logs?: LogEntry[]; 
   gameOverMessage?: string;
 };
-
-// Kept for compatibility with some components that might use it
-export type GameState = Omit<GameSession, 'session_id' | 'game_code' | 'creator_user_uid' | 'status' | 'players' | 'current_turn' | 'current_player_index' | 'currentCard' | 'logs'>;
-export type DecisionOption = { id: string; name: string, description: string; effects: DecisionEffect[]; variant: string; };

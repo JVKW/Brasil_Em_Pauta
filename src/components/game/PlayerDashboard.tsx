@@ -11,7 +11,7 @@ import { ScrollArea } from '../ui/scroll-area';
 
 type PlayerDashboardProps = {
   players: Player[];
-  currentPlayerId: string;
+  currentPlayerId?: string;
 };
 
 export default function PlayerDashboard({ players, currentPlayerId }: PlayerDashboardProps) {
@@ -24,7 +24,7 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
         <ScrollArea className="h-full p-2 pt-0">
         <div className="space-y-2">
           {players.map((player) => {
-            if (!player || !player.name) {
+            if (!player || !player.nickname) {
               return null;
             }
 
@@ -41,12 +41,12 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
                       isCurrentPlayer ? "bg-primary/20 border-primary shadow-md border-2" : "bg-card/50"
                     )}>
                       <Avatar className="h-10 w-10 border-2 border-primary/20">
-                        {avatarImage && <AvatarImage src={avatarImage.imageUrl} alt={player.name} data-ai-hint={avatarImage.imageHint} />}
-                        <AvatarFallback>{player.name.charAt(0)}</AvatarFallback>
+                        {avatarImage && <AvatarImage src={avatarImage.imageUrl} alt={player.nickname} data-ai-hint={avatarImage.imageHint} />}
+                        <AvatarFallback>{player.nickname.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-grow overflow-hidden">
-                        <p className="text-sm font-bold text-foreground truncate">{player.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{details?.name || 'Função desconhecida'}</p>
+                        <p className="text-sm font-bold text-foreground truncate">{player.nickname}</p>
+                        <p className="text-xs text-muted-foreground truncate">{details?.name || player.character_role || 'Função desconhecida'}</p>
                          <div className="flex items-center text-xs mt-1">
                             <Coins className="h-3 w-3 mr-1 text-amber-500" />
                             <span className="font-semibold">{player.capital}</span>

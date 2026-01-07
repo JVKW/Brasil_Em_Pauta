@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import type { GameSession, Player, DecisionOption } from '@/lib/types';
+import type { GameSession, Player } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import ResourceDashboard from './ResourceDashboard';
 import PlayerDashboard from './PlayerDashboard';
@@ -14,7 +14,6 @@ import LogPanel from './LogPanel';
 import { API_BASE_URL } from '@/lib/api';
 import { useInterval } from '@/hooks/use-interval';
 import { Button } from '../ui/button';
-
 
 type GameClientProps = {
   gameCode: string;
@@ -43,8 +42,14 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       const data: GameSession = await response.json();
       setGameSession(data);
 
-      if(data.status === 'finished' && !gameOver.isGameOver) {
-        setGameOver({ isGameOver: true, message: data.gameOverMessage || "A partida foi concluída!" });
+      if (data.status === 'finished' && !gameOver.isGameOver) {
+        let message = "A partida foi concluída!";
+        if (data.end_reason === 'collapsed') {
+          message = "Colapso! Um indicador essencial chegou a zero ou a fome atingiu níveis insustentáveis. O país entrou em ruínas.";
+        } else if (data.end_reason === 'victory') {
+          message = "Vitória Coletiva! A nação prosperou e alcançou a Justiça Social!";
+        }
+        setGameOver({ isGameOver: true, message: data.gameOverMessage || message });
       }
 
     } catch (e: any) {
@@ -59,7 +64,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     }
   }, [gameCode, toast, gameOver.isGameOver]);
 
-  useInterval(fetchGameSession, POLLING_INTERVAL);
+  useInterval(fetchGameSession, gameSession?.status === 'finished' ? null : POLLING_INTERVAL);
 
   useEffect(() => {
     fetchGameSession();
@@ -89,11 +94,11 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     }
   };
 
-
   const players = useMemo(() => gameSession?.players || [], [gameSession?.players]);
+  
   const currentPlayer = useMemo(() => {
-    if (!gameSession || !players.length) return null;
-    return players[gameSession.current_player_index];
+    if (!gameSession || !players.length || gameSession.current_player_index === undefined) return null;
+    return players.find(p => p.turn_order === gameSession.current_player_index);
   }, [players, gameSession]);
   
   const currentCard = useMemo(() => {
@@ -123,7 +128,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     }
   };
   
-  const handleDecision = useCallback(async (option: DecisionOption) => {
+  const handleDecision = useCallback(async (choiceIndex: number) => {
     if (isProcessing || !gameSession || !currentPlayer || userUid !== currentPlayer.user_uid) return;
     setIsProcessing(true);
 
@@ -134,7 +139,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         body: JSON.stringify({
           gameCode: gameSession.game_code,
           userUid: userUid,
-          choice: option.id,
+          choice: choiceIndex, // Send the index of the choice
         }),
       });
 
@@ -144,7 +149,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         throw new Error(result.error || 'Não foi possível processar a decisão.');
       }
       
-      await fetchGameSession();
+      await fetchGameSession(); // Poll for new state
 
     } catch (e: any) {
         console.error("Failed to process decision:", e);
@@ -183,7 +188,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
   const isWaiting = gameSession.status === 'waiting';
   const isCreator = userUid === gameSession.creator_user_uid;
   const canStart = isCreator && isWaiting && players.length >= 2;
-
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">

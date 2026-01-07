@@ -1,15 +1,23 @@
 import type { Role, Boss, RoleDetails, Indicator } from './types';
-import { Landmark, GraduationCap, Tractor, HandHelping, Megaphone, ShieldCheck, BookOpen, Heart, Users, Soup, Shield } from 'lucide-react';
+import { Landmark, GraduationCap, Tractor, HandHelping, Megaphone, ShieldCheck, BookOpen, Heart, Users, Soup, Shield, User, Briefcase, Scale as LawIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
-export const roleDetails: Record<Role, RoleDetails> = {
+export const roleDetails: Record<string, RoleDetails> = {
+  Presidente: { name: 'Presidente', description: 'O líder da nação, com grande responsabilidade.', icon: Landmark },
+  Ministro: { name: 'Ministro', description: 'Especialista em uma área chave do governo.', icon: Briefcase },
+  General: { name: 'General', description: 'Comandante das forças armadas, focado em ordem.', icon: ShieldCheck },
+  Opositor: { name: 'Opositor', description: 'Fiscaliza e critica as ações do governo.', icon: LawIcon },
+  Empresário: { name: 'Empresário', description: 'Influencia a economia com foco no lucro.', icon: Landmark },
+  Jornalista: { name: 'Jornalista', description: 'Informa o público e molda a opinião popular.', icon: Megaphone },
+  Cidadão: { name: 'Cidadão', description: 'Um cidadão comum, representando o povo.', icon: User },
+  
+  // Legado, pode ser removido se não for mais usado
   ministerOfEducation: { name: 'Ministro da Educação', description: 'Efeito dobrado em ações para Educação.', icon: GraduationCap },
   economyManager: { name: 'Gestor da Economia', description: 'Gera recursos mais facilmente.', icon: Landmark },
   agriculture: { name: 'Ministro da Agricultura', description: 'Reduz a Fome com mais eficiência.', icon: Tractor },
   religious: { name: 'Líder Religioso', description: 'Aumenta o Bem-Estar e Apoio Popular.', icon: HandHelping },
   influencer: { name: 'Influencer Digital', description: 'Manipula o Apoio Popular facilmente.', icon: Megaphone },
   militaryCommander: { name: 'Comandante Militar', description: 'Evita que indicadores caiam em crises.', icon: ShieldCheck },
-  Presidente: { name: 'Presidente', description: 'O líder da nação, com grande responsabilidade.', icon: Landmark },
 };
 
 export const indicatorDetails: Record<string, { name: string; icon: LucideIcon; description: string }> = {
@@ -21,8 +29,6 @@ export const indicatorDetails: Record<string, { name: string; icon: LucideIcon; 
   military_religion: { name: 'Ordem e Coesão', icon: Shield, description: "Representam a ordem e a coesão social." },
 };
 
-// initialCards is now mostly for fallback or displaying static content if needed.
-// The live card comes from the API.
 export const initialCards: any[] = [];
 
 export const initialBosses: Boss[] = [
