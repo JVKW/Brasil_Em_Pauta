@@ -71,7 +71,6 @@ const EffectDisplay = ({ effect, difficulty }: { effect: Record<string, number>,
     if (difficulty === 'medium') {
         return (
              <div className="flex flex-wrap gap-2 items-center mt-2">
-                <span className="text-xs font-semibold text-muted-foreground mr-1">Consequências:</span>
                 {Object.entries(effect).map(([key, value]) => {
                      // Ignora efeitos nulos
                      if (value === 0) return null;
@@ -96,7 +95,6 @@ const EffectDisplay = ({ effect, difficulty }: { effect: Record<string, number>,
     // Nível Fácil: Mostra detalhes completos
     return (
         <div className="flex flex-col gap-1.5 mt-2">
-             <p className="text-xs font-semibold text-muted-foreground mb-0.5">Efeitos previstos:</p>
             {Object.entries(effect).map(([key, value]) => {
                 if (value === 0) return null;
                 return (
@@ -154,12 +152,15 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
                         {option.text}
                     </h3>
                     
-                    {/* Divisor só aparece se não for Hard */}
                     {difficulty !== 'hard' && (
-                        <div className="w-full h-px bg-border/50 my-3 group-hover:bg-primary/30 transition-colors" />
+                        <>
+                            <div className="w-full h-px bg-border/50 my-3 group-hover:bg-primary/30 transition-colors" />
+                            <p className="text-xs font-semibold text-muted-foreground mb-0.5">
+                                {difficulty === 'easy' ? 'Efeitos previstos:' : 'Consequências:'}
+                            </p>
+                            <EffectDisplay effect={option.effect} difficulty={difficulty} />
+                        </>
                     )}
-
-                    <EffectDisplay effect={option.effect} difficulty={difficulty} />
                 </div>
             </button>
         ))}
