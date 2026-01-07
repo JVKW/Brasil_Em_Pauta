@@ -12,10 +12,10 @@ import { RotateCcw } from "lucide-react";
 type EndGameDialogProps = {
   isOpen: boolean;
   message: string;
-  onRestart: () => void;
+  onLeave: () => void;
 };
 
-export default function EndGameDialog({ isOpen, message, onRestart }: EndGameDialogProps) {
+export default function EndGameDialog({ isOpen, message, onLeave }: EndGameDialogProps) {
   return (
     <AlertDialog open={isOpen}>
       <AlertDialogContent>
@@ -26,9 +26,9 @@ export default function EndGameDialog({ isOpen, message, onRestart }: EndGameDia
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogAction onClick={onRestart}>
+          <AlertDialogAction onClick={onLeave}>
             <RotateCcw className="mr-2 h-4 w-4" />
-            Jogar Novamente
+            Voltar ao Lobby
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

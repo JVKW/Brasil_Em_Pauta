@@ -36,20 +36,20 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     try {
       const response = await fetch(`${API_BASE_URL}/game/${gameCode}`);
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Não foi possível carregar o estado do jogo.');
+        const err = await response.json().catch(() => ({error: 'Não foi possível carregar o estado do jogo.'}));
+        throw new Error(err.error);
       }
       const data: GameSession = await response.json();
       setGameSession(data);
 
       if (data.status === 'finished' && !gameOver.isGameOver) {
-        let message = "A partida foi concluída!";
+        let message = data.gameOverMessage || "A partida foi concluída!";
         if (data.end_reason === 'collapsed') {
           message = "Colapso! Um indicador essencial chegou a zero ou a fome atingiu níveis insustentáveis. O país entrou em ruínas.";
         } else if (data.end_reason === 'victory') {
           message = "Vitória Coletiva! A nação prosperou e alcançou a Justiça Social!";
         }
-        setGameOver({ isGameOver: true, message: data.gameOverMessage || message });
+        setGameOver({ isGameOver: true, message: message });
       }
 
     } catch (e: any) {
@@ -106,28 +106,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       return gameSession.currentCard;
   }, [gameSession]);
 
-  const handleRestart = async () => {
-    if (!gameSession) return;
-    setIsProcessing(true);
-    try {
-        const response = await fetch(`${API_BASE_URL}/game/restart`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gameCode: gameSession.game_code, userUid }),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Falha ao reiniciar');
-        
-        await fetchGameSession();
-        setGameOver({ isGameOver: false, message: '' });
-        toast({ title: "Jogo Reiniciado", description: "Uma nova partida começou." });
-    } catch (e: any) {
-        toast({ variant: "destructive", title: "Erro", description: e.message });
-    } finally {
-        setIsProcessing(false);
-    }
-  };
-  
   const handleDecision = useCallback(async (choiceIndex: number) => {
     if (isProcessing || !gameSession || !currentPlayer || userUid !== currentPlayer.user_uid) return;
     setIsProcessing(true);
@@ -191,7 +169,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
-      <Header onRestart={handleRestart} gameCode={gameSession.game_code} />
+      <Header gameCode={gameSession.game_code} />
       <main className="flex-1 container mx-auto px-4 py-2 flex flex-col gap-2 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
           <ResourceDashboard indicators={gameSession} />
@@ -239,7 +217,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       <EndGameDialog
         isOpen={gameOver.isGameOver}
         message={gameOver.message}
-        onRestart={handleRestart}
+        onLeave={onLeave}
       />
     </div>
   );

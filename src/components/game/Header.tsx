@@ -1,15 +1,14 @@
 'use client';
 
 import { Button } from "@/components/ui/button";
-import { Scale, RotateCcw, Copy } from "lucide-react";
+import { Scale, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type HeaderProps = {
-  onRestart: () => void;
   gameCode: string;
 };
 
-export default function Header({ onRestart, gameCode }: HeaderProps) {
+export default function Header({ gameCode }: HeaderProps) {
   const { toast } = useToast();
 
   const handleCopyCode = () => {
@@ -38,10 +37,6 @@ export default function Header({ onRestart, gameCode }: HeaderProps) {
                     <Copy className="h-4 w-4" />
                 </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={onRestart}>
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Reiniciar
-            </Button>
           </div>
         </div>
       </div>
