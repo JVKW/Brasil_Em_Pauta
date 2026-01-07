@@ -119,24 +119,27 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         body: JSON.stringify({
           gameCode: gameSession.game_code,
           userUid: userUid,
-          choice: choiceIndex, // Send the index of the choice
+          choice: choiceIndex,
         }),
       });
 
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Não foi possível processar a decisão.');
+        const errorResult = await response.json().catch(() => null);
+        const errorMessage = errorResult?.error || 'Não foi possível processar a decisão.';
+        toast({
+            variant: "destructive",
+            title: "Erro de Jogada",
+            description: errorMessage,
+        });
+      } else {
+        await fetchGameSession(); // Poll for new state on success
       }
-      
-      await fetchGameSession(); // Poll for new state
-
     } catch (e: any) {
         console.error("Failed to process decision:", e);
         toast({
             variant: "destructive",
-            title: "Erro de Jogada",
-            description: e.message || "Não foi possível salvar sua jogada.",
+            title: "Erro de Conexão",
+            description: e.message || "Não foi possível conectar ao servidor.",
         });
     } finally {
        setIsProcessing(false);
