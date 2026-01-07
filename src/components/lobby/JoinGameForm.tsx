@@ -39,14 +39,12 @@ export default function JoinGameForm({ userUid, playerName, onPlayerNameChange, 
         body: JSON.stringify({ gameCode: upperCaseGameCode, userUid, playerName }),
       });
       
-      if (!response.ok) {
-        // If the response is not OK, try to parse the error message from the body.
-        const errorResult = await response.json().catch(() => null); // Gracefully handle non-JSON error bodies
-        const errorMessage = errorResult?.error || `Erro ${response.status}: ${response.statusText}`;
-        throw new Error(errorMessage);
-      }
-      
       const result = await response.json();
+
+      if (!response.ok) {
+        // If the response is not OK, the 'result' object contains the error message from the API.
+        throw new Error(result.error || `Erro ${response.status}: Falha ao conectar com o servidor.`);
+      }
       
       toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${upperCaseGameCode}.` });
       onGameJoined(upperCaseGameCode, playerName);
