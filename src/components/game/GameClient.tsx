@@ -9,12 +9,13 @@ import DecisionCardComponent from './DecisionCard';
 import EndGameDialog from './EndGameDialog';
 import { initialBosses } from '@/lib/game-data';
 import Header from './Header';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Users, BookOpen, ScrollText } from 'lucide-react';
 import LogPanel from './LogPanel';
 import { API_BASE_URL } from '@/lib/api';
 import { useInterval } from '@/hooks/use-interval';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type GameClientProps = {
   gameCode: string;
@@ -188,49 +189,107 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         currentBoss && "boss-battle"
       )}>
       <Header gameCode={gameSession.game_code} />
-      <main className="flex-1 container mx-auto px-4 py-2 flex flex-col gap-2 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-          <ResourceDashboard indicators={indicators} />
-          <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} currentBoss={currentBoss} />
-        </div>
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden min-h-0">
-          <div className="lg:col-span-3 flex flex-col overflow-hidden">
-            <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
-          </div>
-          <div className="lg:col-span-6 flex flex-col overflow-hidden">
-            {isWaiting ? (
-                 <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                     <p className="mt-4 text-muted-foreground">
-                        {players.length < 2 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
-                    </p>
-                    <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
+      <main className="flex-1 container mx-auto px-2 py-2 md:px-4 flex flex-col gap-4 overflow-hidden">
+        
+        {/* Desktop Layout */}
+        <div className="hidden lg:flex flex-col flex-1 gap-4 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <ResourceDashboard indicators={indicators} />
+              <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} currentBoss={currentBoss} />
+            </div>
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden min-h-0">
+              <div className="lg:col-span-3 flex flex-col overflow-hidden">
+                <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
+              </div>
+              <div className="lg:col-span-6 flex flex-col overflow-hidden">
+                {isWaiting ? (
+                     <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                         <p className="mt-4 text-muted-foreground">
+                            {players.length < 2 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
+                        </p>
+                        <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
 
-                    {canStart && (
-                        <Button onClick={handleStartGame} disabled={isProcessing} className="mt-6">
-                            {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Iniciar Partida
-                        </Button>
-                    )}
-                </div>
-            ) : currentCard && currentPlayer ? (
-                <DecisionCardComponent
-                card={currentCard}
-                onDecision={handleDecision}
-                isProcessing={isProcessing || !isCurrentPlayerTurn}
-                currentPlayer={currentPlayer}
-                />
-            ) : (
-                 <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                     <p className="mt-4 text-muted-foreground">Aguardando próxima rodada...</p>
-                </div>
-            )}
-          </div>
-          <div className="lg:col-span-3 flex flex-col overflow-hidden">
-            <LogPanel logs={gameSession.logs || []} />
-          </div>
+                        {canStart && (
+                            <Button onClick={handleStartGame} disabled={isProcessing} className="mt-6">
+                                {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Iniciar Partida
+                            </Button>
+                        )}
+                    </div>
+                ) : currentCard && currentPlayer ? (
+                    <DecisionCardComponent
+                    card={currentCard}
+                    onDecision={handleDecision}
+                    isProcessing={isProcessing || !isCurrentPlayerTurn}
+                    currentPlayer={currentPlayer}
+                    />
+                ) : (
+                     <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                         <p className="mt-4 text-muted-foreground">Aguardando próxima rodada...</p>
+                    </div>
+                )}
+              </div>
+              <div className="lg:col-span-3 flex flex-col overflow-hidden">
+                <LogPanel logs={gameSession.logs || []} />
+              </div>
+            </div>
         </div>
+
+        {/* Mobile Layout */}
+        <div className="lg:hidden flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden">
+                 {isWaiting ? (
+                     <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                         <p className="mt-4 text-muted-foreground">
+                            {players.length < 2 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
+                        </p>
+                        <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
+
+                        {canStart && (
+                            <Button onClick={handleStartGame} disabled={isProcessing} className="mt-6">
+                                {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Iniciar Partida
+                            </Button>
+                        )}
+                    </div>
+                ) : currentCard && currentPlayer ? (
+                    <DecisionCardComponent
+                    card={currentCard}
+                    onDecision={handleDecision}
+                    isProcessing={isProcessing || !isCurrentPlayerTurn}
+                    currentPlayer={currentPlayer}
+                    />
+                ) : (
+                     <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                         <p className="mt-4 text-muted-foreground">Aguardando próxima rodada...</p>
+                    </div>
+                )}
+            </div>
+
+            <Tabs defaultValue="players" className="w-full flex flex-col">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="players"><Users className="w-4 h-4 mr-1"/> Gabinete</TabsTrigger>
+                <TabsTrigger value="nation"><BookOpen className="w-4 h-4 mr-1"/> Nação</TabsTrigger>
+                <TabsTrigger value="logs"><ScrollText className="w-4 h-4 mr-1"/> Diário</TabsTrigger>
+              </TabsList>
+              <TabsContent value="players" className="flex-1 overflow-auto mt-2">
+                <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
+              </TabsContent>
+              <TabsContent value="nation" className="flex-1 overflow-auto mt-2 space-y-4">
+                <ResourceDashboard indicators={indicators} />
+                <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} currentBoss={currentBoss} />
+              </TabsContent>
+              <TabsContent value="logs" className="flex-1 overflow-auto mt-2">
+                 <LogPanel logs={gameSession.logs || []} />
+              </TabsContent>
+            </Tabs>
+        </div>
+
+
       </main>
       <EndGameDialog
         isOpen={gameOver.isGameOver}
