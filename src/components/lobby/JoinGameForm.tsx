@@ -39,10 +39,12 @@ export default function JoinGameForm({ userUid, playerName, onPlayerNameChange, 
         body: JSON.stringify({ gameCode: upperCaseGameCode, userUid, playerName }),
       });
 
-      if (!response.ok) {
-        // Safely parse the error message from the API.
-        const errorResult = await response.json().catch(() => null);
-        const errorMessage = errorResult?.error || `Erro ${response.status}: ${response.statusText}`;
+      // Sempre espere pelo corpo da resposta JSON.
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        // Se a resposta não for OK ou o corpo indicar falha, mostre o erro.
+        const errorMessage = result?.error || `Erro ${response.status}: ${response.statusText}`;
         
         toast({
             variant: 'destructive',
@@ -51,6 +53,7 @@ export default function JoinGameForm({ userUid, playerName, onPlayerNameChange, 
         });
 
       } else {
+        // Apenas se a resposta for OK E o corpo indicar sucesso, prossiga.
         toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${upperCaseGameCode}.` });
         onGameJoined(upperCaseGameCode, playerName);
       }
