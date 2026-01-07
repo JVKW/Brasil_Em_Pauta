@@ -38,23 +38,29 @@ export default function JoinGameForm({ userUid, playerName, onPlayerNameChange, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ gameCode: upperCaseGameCode, userUid, playerName }),
       });
-      
-      const result = await response.json();
 
       if (!response.ok) {
-        // If the response is not OK, the 'result' object contains the error message from the API.
-        throw new Error(result.error || `Erro ${response.status}: Falha ao conectar com o servidor.`);
+        // Safely parse the error message from the API.
+        const errorResult = await response.json().catch(() => null);
+        const errorMessage = errorResult?.error || `Erro ${response.status}: ${response.statusText}`;
+        
+        toast({
+            variant: 'destructive',
+            title: 'Erro ao entrar na partida',
+            description: errorMessage,
+        });
+
+      } else {
+        toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${upperCaseGameCode}.` });
+        onGameJoined(upperCaseGameCode, playerName);
       }
-      
-      toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${upperCaseGameCode}.` });
-      onGameJoined(upperCaseGameCode, playerName);
 
     } catch (error: any) {
       console.error("Error joining game:", error);
       toast({
             variant: 'destructive',
-            title: 'Erro ao entrar na partida',
-            description: error.message || 'Ocorreu um erro desconhecido.',
+            title: 'Erro de Conexão',
+            description: 'Não foi possível conectar ao servidor. Tente novamente mais tarde.',
         });
     } finally {
         setIsLoading(false);
