@@ -19,7 +19,7 @@ const AnalyzeWinConditionsInputSchema = z.object({
   hunger: z.number().describe('The level of hunger (0-10, inverse).'),
   militaryReligion: z.number().describe('The level of military & religion (0-10).'),
   capital: z.number().describe('The amount of capital a player has.'),
-  isOpportunist: z.boolean().describe('Whether the player is an opportunist.'),
+  isOpportunist: z.boolean().describe('Whether the player has the secret objective "Opportunist".'),
 });
 export type AnalyzeWinConditionsInput = z.infer<typeof AnalyzeWinConditionsInputSchema>;
 

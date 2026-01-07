@@ -3,7 +3,6 @@ import { Landmark, GraduationCap, Tractor, HandHelping, Megaphone, ShieldCheck, 
 import type { LucideIcon } from 'lucide-react';
 
 export const roleDetails: Record<string, RoleDetails> = {
-  Presidente: { name: 'Presidente', description: 'O líder da nação, com grande responsabilidade.', icon: Landmark },
   Ministro: { name: 'Ministro', description: 'Especialista em uma área chave do governo.', icon: Briefcase },
   General: { name: 'General', description: 'Comandante das forças armadas, focado em ordem.', icon: ShieldCheck },
   Opositor: { name: 'Opositor', description: 'Fiscaliza e critica as ações do governo.', icon: LawIcon },

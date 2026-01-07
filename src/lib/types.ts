@@ -2,6 +2,8 @@ import type { LucideIcon } from 'lucide-react';
 
 export type Indicator = 'economy' | 'education' | 'wellbeing' | 'popular_support' | 'hunger' | 'military_religion';
 
+export type Role = 'Presidente' | 'Ministro' | 'General' | 'Opositor' | 'Empresário' | 'Jornalista' | 'Cidadão';
+
 export type Player = {
   id: string;
   session_id: string;
@@ -11,10 +13,13 @@ export type Player = {
   capital: number;
   turn_order: number;
   avatar?: string;
-  isOpportunist?: boolean;
+  isOpportunist?: boolean; // Se o back determinar um objetivo secreto
 };
 
-export type DecisionEffect = Record<string, number>;
+export type DecisionEffect = {
+  [key in Indicator | 'capital' | 'board_position']?: number;
+};
+
 
 export type DecisionOption = {
   text: string;
@@ -35,7 +40,7 @@ export type RoleDetails = {
   icon: LucideIcon;
 };
 
-// Represents the entire state of a game session from GET /game/:gameCode
+// Representa a resposta completa de GET /game/:gameCode
 export type GameSession = {
   id: string;
   game_code: string;
