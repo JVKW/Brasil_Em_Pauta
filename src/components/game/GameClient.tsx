@@ -44,8 +44,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       setGameSession(data);
 
       if(data.status === 'finished' && !gameOver.isGameOver) {
-        // This part can be improved by having a specific endpoint or message for the game over reason.
-        // For now, we use a generic message.
         setGameOver({ isGameOver: true, message: data.gameOverMessage || "A partida foi concluída!" });
       }
 
@@ -61,15 +59,12 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     }
   }, [gameCode, toast, gameOver.isGameOver]);
 
-  // Use the custom interval hook for polling
   useInterval(fetchGameSession, POLLING_INTERVAL);
 
-  // Initial fetch
   useEffect(() => {
     fetchGameSession();
   }, [fetchGameSession]);
 
-  // Effect to automatically start the game when 4 players have joined
   useEffect(() => {
     if (gameSession && gameSession.status === 'waiting' && gameSession.players.length === 4) {
       const startGame = async () => {
@@ -82,8 +77,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
           if (!response.ok) {
             throw new Error('Falha ao iniciar a partida.');
           }
-          // The poller will pick up the state change, but we can trigger a fetch for faster UI update.
-          fetchGameSession();
+          await fetchGameSession();
           toast({ title: "A partida começou!", description: "A sala está cheia. Bom jogo!" });
         } catch (error: any) {
           console.error("Error starting game:", error);
@@ -91,7 +85,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         }
       };
       
-      // Only the creator should be responsible for starting the game
       if (userUid === gameSession.creator_user_uid) {
         startGame();
       }
@@ -107,7 +100,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
   
   const currentCard = useMemo(() => {
       if (!gameSession || !gameSession.current_card) return null;
-      // The API provides the full card object, so we just use it.
       return gameSession.current_card;
   }, [gameSession]);
 
@@ -123,7 +115,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Falha ao reiniciar');
         
-        await fetchGameSession(); // fetch latest state
+        await fetchGameSession();
         setGameOver({ isGameOver: false, message: '' });
         toast({ title: "Jogo Reiniciado", description: "Uma nova partida começou." });
     } catch (e: any) {
@@ -144,7 +136,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         body: JSON.stringify({
           gameCode: gameSession.game_code,
           userUid: userUid,
-          choice: option.id, // Assuming option.id corresponds to 'ethical' or 'corrupt' etc.
+          choice: option.id,
         }),
       });
 
@@ -154,8 +146,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         throw new Error(result.error || 'Não foi possível processar a decisão.');
       }
       
-      // The decision was successful, the poller will pick up the new state.
-      // We can optionally trigger an immediate fetch.
       await fetchGameSession();
 
     } catch (e: any) {
@@ -189,7 +179,9 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       );
   }
   
-  if (!gameSession || !currentPlayer || !currentCard) {
+  // Condição ajustada: se a sessão não existe, mostre o carregamento.
+  // A verificação de currentPlayer e currentCard agora acontece dentro do render principal.
+  if (!gameSession) {
      return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -200,7 +192,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     );
   }
 
-  const isCurrentPlayerTurn = userUid === currentPlayer.user_uid;
+  const isCurrentPlayerTurn = !!currentPlayer && userUid === currentPlayer.user_uid;
   const indicators = gameSession.nation_state;
 
   return (
@@ -213,10 +205,10 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         </div>
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden min-h-0">
           <div className="lg:col-span-3 flex flex-col overflow-hidden">
-            <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
+            <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
           </div>
           <div className="lg:col-span-6 flex flex-col overflow-hidden">
-            {gameSession.status === 'in_progress' ? (
+            {gameSession.status === 'in_progress' && currentCard && currentPlayer ? (
                 <DecisionCardComponent
                 card={currentCard}
                 onDecision={handleDecision}
@@ -244,3 +236,5 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     </div>
   );
 }
+
+    
