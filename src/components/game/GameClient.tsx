@@ -96,18 +96,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     }
   };
 
-  const players = useMemo(() => gameSession?.players || [], [gameSession?.players]);
-  
-  const currentPlayer = useMemo(() => {
-    if (!gameSession || !players.length || gameSession.current_player_index === undefined) return null;
-    return players.find(p => p.turn_order === gameSession.current_player_index);
-  }, [players, gameSession]);
-  
-  const currentCard = useMemo(() => {
-      if (!gameSession || !gameSession.currentCard) return null;
-      return gameSession.currentCard;
-  }, [gameSession]);
-
   const handleDecision = useCallback(async (choiceIndex: number) => {
     if (isProcessing || !gameSession || !currentPlayer || userUid !== currentPlayer.user_uid) return;
     setIsProcessing(true);
@@ -145,8 +133,20 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     } finally {
        setIsProcessing(false);
     }
-  }, [gameSession, currentPlayer, isProcessing, toast, userUid, fetchGameSession]);
+  }, [gameSession, isProcessing, toast, userUid, fetchGameSession]);
+
+  const players = useMemo(() => gameSession?.players || [], [gameSession?.players]);
   
+  const currentPlayer = useMemo(() => {
+    if (!gameSession || !players.length || gameSession.current_player_index === undefined) return null;
+    return players.find(p => p.turn_order === gameSession.current_player_index);
+  }, [players, gameSession]);
+  
+  const currentCard = useMemo(() => {
+      if (!gameSession || !gameSession.currentCard) return null;
+      return gameSession.currentCard;
+  }, [gameSession]);
+
   const currentBoss = useMemo(() => {
     if (!gameSession) return null;
     return initialBosses.find(b => b.position === gameSession.board_position) || null;
@@ -175,7 +175,8 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
   const isCurrentPlayerTurn = !!currentPlayer && userUid === currentPlayer.user_uid;
   const isWaiting = gameSession.status === 'waiting';
   const isCreator = userUid === gameSession.creator_user_uid;
-  const canStart = isCreator && isWaiting && players.length >= 1; // Changed to 1 for easier testing
+  const canStart = isCreator && isWaiting && players.length >= 2 && players.length <= 4;
+
 
   const indicators = {
     economy: gameSession.economy,
@@ -196,12 +197,12 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       <main className="flex-1 container mx-auto px-2 py-2 md:px-4 flex flex-col gap-4 overflow-hidden">
         
         {/* Desktop Layout */}
-        <div className="hidden lg:flex flex-col flex-1 gap-4 overflow-hidden">
+        <div className="hidden lg:grid lg:grid-rows-[auto_1fr] flex-1 gap-4 overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <ResourceDashboard indicators={indicators} />
               <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} currentBoss={currentBoss} />
             </div>
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-y-auto min-h-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-hidden min-h-0">
               <div className="lg:col-span-3 flex flex-col">
                 <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
               </div>
@@ -210,7 +211,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                          <p className="mt-4 text-muted-foreground">
-                            {players.length < 1 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
+                            {players.length < 2 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
                         </p>
                         <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
 
@@ -245,56 +246,58 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
 
         {/* Mobile Layout */}
         <div className="lg:hidden flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 flex flex-col min-h-0 mb-2">
-                 {isWaiting ? (
-                     <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                         <p className="mt-4 text-muted-foreground">
-                            {players.length < 1 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
-                        </p>
-                        <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
+             {isWaiting ? (
+                 <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4 mb-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                     <p className="mt-4 text-muted-foreground">
+                        {players.length < 2 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
+                    </p>
+                    <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
 
-                        {canStart && (
-                            <Button onClick={handleStartGame} disabled={isProcessing} className="mt-6">
-                                {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                Iniciar Partida
-                            </Button>
-                        )}
-                    </div>
-                ) : currentCard && currentPlayer ? (
+                    {canStart && (
+                        <Button onClick={handleStartGame} disabled={isProcessing} className="mt-6">
+                            {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Iniciar Partida
+                        </Button>
+                    )}
+                </div>
+            ) : currentCard && currentPlayer ? (
+                <div className="flex-1 flex flex-col min-h-0 mb-2">
                     <DecisionCardComponent
-                      card={currentCard}
-                      onDecision={handleDecision}
-                      isProcessing={isProcessing}
-                      isMyTurn={isCurrentPlayerTurn}
-                      currentPlayer={currentPlayer}
-                      difficulty={gameSession.difficulty}
-                    />
-                ) : (
-                     <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                         <p className="mt-4 text-muted-foreground">Aguardando próxima rodada...</p>
-                    </div>
-                )}
-            </div>
-
-            <Tabs defaultValue="players" className="w-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="players"><Users className="w-4 h-4 mr-1"/> Gabinete</TabsTrigger>
-                <TabsTrigger value="nation"><BookOpen className="w-4 h-4 mr-1"/> Nação</TabsTrigger>
-                <TabsTrigger value="logs"><ScrollText className="w-4 h-4 mr-1"/> Diário</TabsTrigger>
-              </TabsList>
-              <TabsContent value="players" className="flex-1 overflow-auto mt-2">
-                <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
-              </TabsContent>
-              <TabsContent value="nation" className="flex-1 overflow-auto mt-2 space-y-4">
-                <ResourceDashboard indicators={indicators} />
-                <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} currentBoss={currentBoss} />
-              </TabsContent>
-              <TabsContent value="logs" className="flex-1 overflow-auto mt-2">
-                 <LogPanel logs={gameSession.logs || []} />
-              </TabsContent>
-            </Tabs>
+                        card={currentCard}
+                        onDecision={handleDecision}
+                        isProcessing={isProcessing}
+                        isMyTurn={isCurrentPlayerTurn}
+                        currentPlayer={currentPlayer}
+                        difficulty={gameSession.difficulty}
+                        />
+                </div>
+            ) : (
+                 <div className="flex-1 flex items-center justify-center h-full bg-card rounded-lg shadow-lg mb-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                     <p className="mt-4 text-muted-foreground">Aguardando próxima rodada...</p>
+                </div>
+            )}
+            
+            {!isWaiting && (
+                <Tabs defaultValue="players" className="w-full flex flex-col">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="players"><Users className="w-4 h-4 mr-1"/> Gabinete</TabsTrigger>
+                    <TabsTrigger value="nation"><BookOpen className="w-4 h-4 mr-1"/> Nação</TabsTrigger>
+                    <TabsTrigger value="logs"><ScrollText className="w-4 h-4 mr-1"/> Diário</TabsTrigger>
+                </TabsList>
+                <TabsContent value="players" className="flex-1 overflow-auto mt-2">
+                    <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
+                </TabsContent>
+                <TabsContent value="nation" className="flex-1 overflow-auto mt-2 space-y-4">
+                    <ResourceDashboard indicators={indicators} />
+                    <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} currentBoss={currentBoss} />
+                </TabsContent>
+                <TabsContent value="logs" className="flex-1 overflow-auto mt-2">
+                    <LogPanel logs={gameSession.logs || []} />
+                </TabsContent>
+                </Tabs>
+            )}
         </div>
 
 
