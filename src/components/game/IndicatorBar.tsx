@@ -1,8 +1,7 @@
-import { Progress, ProgressIndicator } from "@/components/ui/progress";
+import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
-import * as React from "react";
 
 type IndicatorBarProps = {
   label: string;
@@ -11,30 +10,22 @@ type IndicatorBarProps = {
   isInverse?: boolean;
 };
 
-const PatchedProgress = React.forwardRef<
-    React.ElementRef<typeof Progress>,
-    React.ComponentPropsWithoutRef<typeof Progress> & { indicatorClassName?: string }
->(({ className, value, indicatorClassName, ...props }, ref) => (
-    <Progress
-        ref={ref}
-        className={className}
-        value={(value || 0) * 10} // Convert 0-10 scale to 0-100 for progress bar
-        {...props}
-    >
-        <ProgressIndicator
-            className={cn("h-full w-full flex-1 bg-primary transition-all", indicatorClassName)}
-            style={{ transform: `translateX(-${100 - ((value || 0) * 10)}%)` }}
-        />
-    </Progress>
-));
-PatchedProgress.displayName = 'Progress';
-
-
 export default function IndicatorBar({ label, value, Icon, isInverse = false }: IndicatorBarProps) {
   const displayValue = Math.round(value);
-  const progressColor = isInverse
-    ? value >= 8 ? 'bg-red-500' : value >= 5 ? 'bg-yellow-500' : 'bg-green-500'
-    : value <= 2 ? 'bg-red-500' : value <= 5 ? 'bg-yellow-500' : 'bg-green-500';
+  
+  // Define colors based on the value and whether the indicator is inverse
+  let progressColor = 'bg-green-500'; // Default to green
+  if (isInverse) {
+    // For inverse indicators (like hunger), high values are bad
+    if (displayValue >= 8) progressColor = 'bg-red-500';
+    else if (displayValue >= 5) progressColor = 'bg-yellow-500';
+  } else {
+    // For normal indicators, low values are bad
+    if (displayValue <= 2) progressColor = 'bg-red-500';
+    else if (displayValue <= 5) progressColor = 'bg-yellow-500';
+  }
+
+  const progressValue = displayValue * 10; // Convert 0-10 scale to 0-100
 
   return (
     <TooltipProvider>
@@ -48,7 +39,7 @@ export default function IndicatorBar({ label, value, Icon, isInverse = false }: 
               </div>
               <span className="font-bold text-primary">{displayValue}</span>
             </div>
-            <PatchedProgress value={displayValue} className="h-3" indicatorClassName={progressColor} />
+            <Progress value={progressValue} indicatorClassName={progressColor} />
           </div>
         </TooltipTrigger>
         <TooltipContent>

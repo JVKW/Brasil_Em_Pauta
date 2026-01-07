@@ -2,86 +2,90 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DecisionCard, Player } from "@/lib/types";
 import { roleDetails, indicatorDetails } from "@/lib/game-data";
-import { Loader2, Coins, HelpCircle, ArrowUp } from "lucide-react";
+import { Loader2, Coins, HelpCircle, ArrowUp, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Separator } from "../ui/separator";
 
 type DecisionCardProps = {
   card: DecisionCard;
   onDecision: (choiceIndex: number) => void;
   isProcessing: boolean;
+  isMyTurn: boolean;
   currentPlayer: Player;
 };
 
 const EffectIcon = ({ effectType, change }: { effectType: string, change: number }) => {
   const isPositive = change > 0;
   
-  if (effectType === 'capital') return <Coins className="h-3 w-3 text-amber-400" />;
-  if (effectType === 'board_position') return <ArrowUp className="h-3 w-3 text-green-400" />;
+  if (effectType === 'capital') return <Coins className="h-4 w-4 text-amber-400" />;
+  if (effectType === 'board_position') return <ArrowUp className="h-4 w-4 text-green-500" />;
   
   const indicatorKey = Object.keys(indicatorDetails).find(key => key.toLowerCase() === effectType.toLowerCase());
 
   if (indicatorKey) {
     const Icon = indicatorDetails[indicatorKey].icon;
+    let iconColor = 'text-gray-400';
     // For hunger, a positive change is bad (red), and a negative change is good (green).
     if (indicatorKey === 'hunger') {
-       return <Icon className={cn("h-3 w-3", isPositive ? 'text-red-400' : 'text-green-400')} />;
-    }
+       iconColor = isPositive ? 'text-red-400' : 'text-green-400';
+    } else {
     // For other indicators, a positive change is good (green), and a negative change is bad (red).
-    return <Icon className={cn("h-3 w-3", isPositive ? 'text-green-400' : 'text-red-400')} />;
+       iconColor = isPositive ? 'text-green-400' : 'text-red-400';
+    }
+    return <Icon className={cn("h-4 w-4", iconColor)} />;
   }
 
-  return <HelpCircle className="h-3 w-3" />;
+  return <HelpCircle className="h-4 w-4" />;
 };
 
-const getEffectText = (effects: Record<string, number>): {text: string, type: string, change: number}[] => {
-    return Object.entries(effects).map(([key, value]) => {
-      const effectName = indicatorDetails[key]?.name || (key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '));
-      if (key === 'board_position') {
-        return { text: `Progresso ${value > 0 ? '+' : ''}${value}`, type: 'board_position', change: value };
-      }
-       if (key === 'capital') {
-        return { text: `Capital ${value > 0 ? '+' : ''}${value}`, type: 'capital', change: value };
-      }
-      return { text: `${effectName} ${value > 0 ? '+' : ''}${value}`, type: key, change: value };
-    }).filter(e => e.text);
+const getEffectText = (key: string, value: number) => {
+    const effectName = indicatorDetails[key]?.name || (key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '));
+    const sign = value > 0 ? '+' : '';
+    if (key === 'board_position') {
+      return `Avança ${value} casa(s) no tabuleiro`;
+    }
+     if (key === 'capital') {
+      return `Capital do jogador: ${sign}${value}`;
+    }
+    return `${effectName}: ${sign}${value}`;
 };
 
-export default function DecisionCardComponent({ card, onDecision, isProcessing, currentPlayer }: DecisionCardProps) {
+export default function DecisionCardComponent({ card, onDecision, isProcessing, isMyTurn, currentPlayer }: DecisionCardProps) {
   const playerRole = roleDetails[currentPlayer.character_role];
 
   return (
     <Card className="shadow-2xl border-primary/20 bg-card/80 backdrop-blur-sm border-2 flex flex-col h-full overflow-hidden">
-      <CardHeader>
-        <CardTitle className="text-accent font-headline text-2xl lg:text-3xl">{card.title}</CardTitle>
-        <CardDescription className="text-base lg:text-lg pt-2 text-foreground/80">{card.dilemma}</CardDescription>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-accent font-headline text-3xl">{card.title}</CardTitle>
+        <CardDescription className="text-lg pt-4 text-foreground/80 font-body leading-relaxed">
+          {card.dilemma}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+      <CardContent className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 p-4 items-stretch">
         {card.options.map((option, index) => (
-            <div key={index} className="w-full flex">
-              <Button
-                variant="secondary"
-                className={cn(
-                  "w-full h-full text-base py-3 justify-start text-left whitespace-normal leading-snug flex flex-col items-start hover:bg-primary/20 hover:border-primary",
-                  isProcessing && "opacity-50 cursor-not-allowed",
-                  "border-2 border-transparent"
-                )}
-                onClick={() => onDecision(index)}
-                disabled={isProcessing}
-              >
-                <div className="w-full flex justify-between items-center mb-2">
-                  <span className="font-bold text-lg">{option.text}</span>
-                    {isProcessing && <Loader2 className="h-5 w-5 animate-spin" />}
+            <div key={index} className="flex flex-col rounded-lg border bg-secondary/30 p-4">
+                <h3 className="font-bold text-lg text-foreground">{option.text}</h3>
+                <Separator className="my-3"/>
+                <div className="flex flex-col gap-2 mb-4 text-sm">
+                    <p className="font-semibold text-muted-foreground mb-1">Consequências:</p>
+                    {Object.entries(option.effect).map(([key, value]) => (
+                        <div key={key} className="flex items-center gap-3">
+                            <EffectIcon effectType={key} change={value} />
+                            <span className="text-foreground/90">{getEffectText(key, value)}</span>
+                        </div>
+                    ))}
                 </div>
-                 <div className="flex flex-wrap gap-x-3 gap-y-1 mt-auto pt-2">
-                  {getEffectText(option.effect).map((effect, i) => (
-                    <Badge key={i} variant="outline" className="flex items-center gap-1.5 text-xs">
-                      <EffectIcon effectType={effect.type} change={effect.change} />
-                      <span>{effect.text}</span>
-                    </Badge>
-                  ))}
+                <div className="mt-auto">
+                    <Button
+                        variant="secondary"
+                        className="w-full mt-2 hover:bg-primary/20 hover:border-primary border-2 border-transparent"
+                        onClick={() => onDecision(index)}
+                        disabled={isProcessing || !isMyTurn}
+                    >
+                        {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Escolher'}
+                    </Button>
                 </div>
-              </Button>
             </div>
         ))}
       </CardContent>

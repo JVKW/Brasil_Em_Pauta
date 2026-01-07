@@ -47,13 +47,13 @@ export default function PlayerDashboard({ players, currentPlayerId }: PlayerDash
                       <div className="flex-grow overflow-hidden">
                         <p className="text-sm font-bold text-foreground truncate">{player.nickname}</p>
                         <p className="text-xs text-muted-foreground truncate">{details?.name || player.character_role || 'Função desconhecida'}</p>
-                         <div className="flex items-center text-xs mt-1">
-                            <Coins className="h-3 w-3 mr-1 text-amber-500" />
+                         <div className="flex items-center text-xs mt-1 gap-1.5">
+                            <Coins className="h-3 w-3 text-amber-500" />
                             <span className="font-semibold">{player.capital}</span>
                         </div>
                       </div>
                       {isCurrentPlayer && (
-                        <div className="relative h-5 w-5 flex-shrink-0">
+                        <div className="relative h-5 w-5 flex-shrink-0 ml-auto">
                            <Crown className="h-5 w-5 text-accent animate-pulse" aria-label="Jogador atual" />
                         </div>
                       )}

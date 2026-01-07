@@ -38,8 +38,8 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     try {
       const response = await fetch(`${API_BASE_URL}/game/${gameCode}`);
       if (!response.ok) {
-        const err = await response.json().catch(() => ({error: 'Não foi possível carregar o estado do jogo.'}));
-        throw new Error(err.error);
+        const errText = await response.text();
+        throw new Error(errText || 'Não foi possível carregar o estado do jogo.');
       }
       const data: GameSession = await response.json();
       setGameSession(data);
@@ -219,10 +219,11 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
                     </div>
                 ) : currentCard && currentPlayer ? (
                     <DecisionCardComponent
-                    card={currentCard}
-                    onDecision={handleDecision}
-                    isProcessing={isProcessing || !isCurrentPlayerTurn}
-                    currentPlayer={currentPlayer}
+                      card={currentCard}
+                      onDecision={handleDecision}
+                      isProcessing={isProcessing}
+                      isMyTurn={isCurrentPlayerTurn}
+                      currentPlayer={currentPlayer}
                     />
                 ) : (
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
@@ -239,7 +240,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
 
         {/* Mobile Layout */}
         <div className="lg:hidden flex flex-col flex-1 overflow-hidden">
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden mb-2">
                  {isWaiting ? (
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -257,10 +258,11 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
                     </div>
                 ) : currentCard && currentPlayer ? (
                     <DecisionCardComponent
-                    card={currentCard}
-                    onDecision={handleDecision}
-                    isProcessing={isProcessing || !isCurrentPlayerTurn}
-                    currentPlayer={currentPlayer}
+                      card={currentCard}
+                      onDecision={handleDecision}
+                      isProcessing={isProcessing}
+                      isMyTurn={isCurrentPlayerTurn}
+                      currentPlayer={currentPlayer}
                     />
                 ) : (
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">

@@ -1,11 +1,25 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { Lora, Playfair_Display } from 'next/font/google';
+import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Brasil em Pauta',
   description: 'Um jogo de Governança em Pauta para um Brasil Ético',
 };
+
+const fontBody = Lora({
+  subsets: ['latin'],
+  variable: '--font-body',
+  weight: ['400', '700'],
+});
+
+const fontHeadline = Playfair_Display({
+  subsets: ['latin'],
+  variable: '--font-headline',
+  weight: '700',
+});
 
 export default function RootLayout({
   children,
@@ -14,12 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lora:wght@400;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased">
+      <body className={cn("font-body antialiased", fontBody.variable, fontHeadline.variable)}>
         {children}
         <Toaster />
       </body>
