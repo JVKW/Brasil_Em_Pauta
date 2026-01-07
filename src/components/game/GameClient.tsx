@@ -1,19 +1,20 @@
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import type { GameSession, Player, DecisionCard, DecisionOption } from '@/lib/types';
+import type { GameSession, Player, DecisionOption } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import ResourceDashboard from './ResourceDashboard';
 import PlayerDashboard from './PlayerDashboard';
 import GameBoard from './GameBoard';
 import DecisionCardComponent from './DecisionCard';
 import EndGameDialog from './EndGameDialog';
-import { roleDetails, initialCards, initialBosses } from '@/lib/game-data';
+import { initialBosses } from '@/lib/game-data';
 import Header from './Header';
 import { Loader2 } from 'lucide-react';
 import LogPanel from './LogPanel';
 import { API_BASE_URL } from '@/lib/api';
 import { useInterval } from '@/hooks/use-interval';
-import { checkWinConditionsAction } from '@/app/actions';
+import { Button } from '../ui/button';
+
 
 type GameClientProps = {
   gameCode: string;
@@ -67,6 +68,35 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
   useEffect(() => {
     fetchGameSession();
   }, [fetchGameSession]);
+
+  // Effect to automatically start the game when 4 players have joined
+  useEffect(() => {
+    if (gameSession && gameSession.status === 'waiting' && gameSession.players.length === 4) {
+      const startGame = async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/game/start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gameCode: gameSession.game_code }),
+          });
+          if (!response.ok) {
+            throw new Error('Falha ao iniciar a partida.');
+          }
+          // The poller will pick up the state change, but we can trigger a fetch for faster UI update.
+          fetchGameSession();
+          toast({ title: "A partida começou!", description: "A sala está cheia. Bom jogo!" });
+        } catch (error: any) {
+          console.error("Error starting game:", error);
+          toast({ variant: 'destructive', title: 'Erro', description: error.message });
+        }
+      };
+      
+      // Only the creator should be responsible for starting the game
+      if (userUid === gameSession.creator_user_uid) {
+        startGame();
+      }
+    }
+  }, [gameSession, userUid, fetchGameSession, toast]);
 
 
   const players = useMemo(() => gameSession?.players || [], [gameSession?.players]);
@@ -164,6 +194,8 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
         <div className="flex min-h-screen flex-col items-center justify-center bg-background">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="mt-4 text-muted-foreground">Aguardando dados da partida...</p>
+             <p className="mt-4 text-xs text-muted-foreground">Código: {gameCode}</p>
+             <Button onClick={onLeave} variant="outline" size="sm" className="mt-4">Sair</Button>
         </div>
     );
   }
@@ -184,12 +216,20 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
             <PlayerDashboard players={players} currentPlayerId={currentPlayer.id} />
           </div>
           <div className="lg:col-span-6 flex flex-col overflow-hidden">
-            <DecisionCardComponent
-              card={currentCard}
-              onDecision={handleDecision}
-              isProcessing={isProcessing || !isCurrentPlayerTurn || gameSession.status !== 'in_progress'}
-              currentPlayer={currentPlayer}
-            />
+            {gameSession.status === 'in_progress' ? (
+                <DecisionCardComponent
+                card={currentCard}
+                onDecision={handleDecision}
+                isProcessing={isProcessing || !isCurrentPlayerTurn}
+                currentPlayer={currentPlayer}
+                />
+            ) : (
+                <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="mt-4 text-muted-foreground">Aguardando mais jogadores...</p>
+                    <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
+                </div>
+            )}
           </div>
           <div className="lg:col-span-3 flex flex-col overflow-hidden">
             <LogPanel logs={gameSession.logs || []} />

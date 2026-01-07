@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import type { DecisionCard, DecisionOption, Player, Indicator } from "@/lib/types";
+import type { DecisionCard, DecisionOption, Player } from "@/lib/types";
 import { roleDetails, indicatorDetails } from "@/lib/game-data";
 import { Loader2, Coins, HelpCircle, ArrowUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -17,16 +17,18 @@ const EffectIcon = ({ effectType, change }: { effectType: string, change: number
   const isPositive = change > 0;
   
   if (effectType === 'capital') return <Coins className="h-3 w-3 text-amber-400" />;
-  if (effectType === 'board') return <ArrowUp className="h-3 w-3 text-green-400" />;
+  if (effectType === 'board_position') return <ArrowUp className="h-3 w-3 text-green-400" />;
   
   const indicatorKey = Object.keys(indicatorDetails).find(key => key.toLowerCase() === effectType.toLowerCase());
 
   if (indicatorKey) {
-    const Icon = indicatorDetails[indicatorKey as Indicator].icon;
+    const Icon = indicatorDetails[indicatorKey].icon;
+    // For hunger, a positive change is bad (red), and a negative change is good (green).
     if (indicatorKey === 'hunger') {
-       return <Icon className={`h-3 w-3 ${isPositive ? 'text-red-400' : 'text-green-400'}`} />;
+       return <Icon className={cn("h-3 w-3", isPositive ? 'text-red-400' : 'text-green-400')} />;
     }
-    return <Icon className={`h-3 w-3 ${isPositive ? 'text-green-400' : 'text-red-400'}`} />;
+    // For other indicators, a positive change is good (green), and a negative change is bad (red).
+    return <Icon className={cn("h-3 w-3", isPositive ? 'text-green-400' : 'text-red-400')} />;
   }
 
   return <HelpCircle className="h-3 w-3" />;
@@ -35,9 +37,12 @@ const EffectIcon = ({ effectType, change }: { effectType: string, change: number
 
 const getEffectText = (effects: Record<string, number>): {text: string, type: string, change: number}[] => {
     return Object.entries(effects).map(([key, value]) => {
-      const effectName = key.charAt(0).toUpperCase() + key.slice(1);
+      const effectName = indicatorDetails[key]?.name || (key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '));
       if (key === 'board_position') {
-        return { text: `Progresso ${value > 0 ? '+' : ''}${value}`, type: 'board', change: value };
+        return { text: `Progresso ${value > 0 ? '+' : ''}${value}`, type: 'board_position', change: value };
+      }
+       if (key === 'capital') {
+        return { text: `Capital ${value > 0 ? '+' : ''}${value}`, type: 'capital', change: value };
       }
       return { text: `${effectName} ${value > 0 ? '+' : ''}${value}`, type: key, change: value };
     }).filter(e => e.text);
@@ -82,7 +87,7 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
       </CardContent>
        <CardFooter>
         <p className="text-sm text-muted-foreground w-full text-center">
-            É a vez de <span className="font-bold text-primary">{currentPlayer.name}</span> ({playerRole.name}) tomar uma decisão.
+            É a vez de <span className="font-bold text-primary">{currentPlayer.name}</span> ({playerRole?.name || 'Desconhecido'}) tomar uma decisão.
         </p>
       </CardFooter>
     </Card>
