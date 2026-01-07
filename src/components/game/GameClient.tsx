@@ -167,12 +167,22 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
   const isCreator = userUid === gameSession.creator_user_uid;
   const canStart = isCreator && isWaiting && players.length >= 2;
 
+  const indicators = {
+    economy: gameSession.economy,
+    education: gameSession.education,
+    wellbeing: gameSession.wellbeing,
+    popular_support: gameSession.popular_support,
+    hunger: gameSession.hunger,
+    military_religion: gameSession.military_religion,
+  };
+
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <Header gameCode={gameSession.game_code} />
       <main className="flex-1 container mx-auto px-4 py-2 flex flex-col gap-2 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-          <ResourceDashboard indicators={gameSession} />
+          <ResourceDashboard indicators={indicators} />
           <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} />
         </div>
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden min-h-0">
