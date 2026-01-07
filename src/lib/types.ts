@@ -60,7 +60,7 @@ export type GameSession = {
   
   players: Player[];
   currentCard: DecisionCard | null;
-  logs?: LogEntry[]; 
+  logs: LogEntry[]; 
   gameOverMessage?: string;
 };
 
