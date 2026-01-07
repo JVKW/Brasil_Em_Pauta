@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import type { GameSession, Player } from '@/lib/types';
+import type { GameSession, Player, Boss } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import ResourceDashboard from './ResourceDashboard';
 import PlayerDashboard from './PlayerDashboard';
@@ -14,6 +14,7 @@ import LogPanel from './LogPanel';
 import { API_BASE_URL } from '@/lib/api';
 import { useInterval } from '@/hooks/use-interval';
 import { Button } from '../ui/button';
+import { cn } from '@/lib/utils';
 
 type GameClientProps = {
   gameCode: string;
@@ -141,6 +142,10 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     }
   }, [gameSession, currentPlayer, isProcessing, toast, userUid, fetchGameSession]);
   
+  const currentBoss = useMemo(() => {
+    if (!gameSession) return null;
+    return initialBosses.find(b => b.position === gameSession.board_position) || null;
+  }, [gameSession?.board_position]);
 
   if (isLoading || !gameSession) {
     return (
@@ -178,12 +183,15 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
 
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
+    <div className={cn(
+        "flex flex-col h-screen bg-background text-foreground overflow-hidden transition-colors duration-500",
+        currentBoss && "boss-battle"
+      )}>
       <Header gameCode={gameSession.game_code} />
       <main className="flex-1 container mx-auto px-4 py-2 flex flex-col gap-2 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
           <ResourceDashboard indicators={indicators} />
-          <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} />
+          <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} currentBoss={currentBoss} />
         </div>
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden min-h-0">
           <div className="lg:col-span-3 flex flex-col overflow-hidden">

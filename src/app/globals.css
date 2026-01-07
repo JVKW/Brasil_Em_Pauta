@@ -56,6 +56,13 @@
     --input: 220 20% 30%;
     --ring: 180 50% 55%;
   }
+
+  /* Estilos para quando encontrar um chefe */
+  .boss-battle {
+    --primary: 0 60% 50%; /* Vermelho Agressivo */
+    --accent: 25 95% 55%; /* Laranja Intenso */
+    --ring: 0 60% 60%;
+  }
 }
 
 @layer base {
