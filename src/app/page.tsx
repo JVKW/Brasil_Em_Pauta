@@ -4,14 +4,9 @@ import { useState, useEffect } from 'react';
 import GameLobby from '@/components/lobby/GameLobby';
 import GameClient from '@/components/game/GameClient';
 
-// Helper to get or create a user UID
-const getOrCreateUserUid = (): string => {
-  let userUid = localStorage.getItem('userUid');
-  if (!userUid) {
-    userUid = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem('userUid', userUid);
-  }
-  return userUid;
+// Helper to generate a unique user UID for the session
+const generateSessionUserUid = (): string => {
+  return `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 };
 
 
@@ -21,9 +16,12 @@ export default function Home() {
   const [playerName, setPlayerName] = useState<string>('');
 
   useEffect(() => {
-    const uid = getOrCreateUserUid();
+    // Generate a unique UID for this specific session instance.
+    // This ensures every open tab/window has its own identity.
+    const uid = generateSessionUserUid();
     setUserUid(uid);
-    // Attempt to get a saved player name
+
+    // Attempt to get a saved player name for convenience, but not the UID.
     const savedName = localStorage.getItem('playerName');
     if (savedName) {
       setPlayerName(savedName);
@@ -33,15 +31,19 @@ export default function Home() {
   const handleGameJoined = (code: string, name: string) => {
     setPlayerName(name);
     setGameCode(code);
+    // Persist player name for convenience across sessions.
     localStorage.setItem('playerName', name);
   };
 
   const handleLeaveGame = () => {
     setGameCode(null);
+    // Optional: could regenerate userUid here if needed, but reloading the page
+    // will have the same effect.
   };
   
   if (!userUid) {
-    return <div>Carregando...</div>;
+    // This state is very brief, happens before useEffect runs.
+    return <div>Gerando sessão de jogador...</div>;
   }
 
   if (!gameCode) {
