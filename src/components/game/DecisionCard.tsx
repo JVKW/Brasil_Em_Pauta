@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import type { DecisionCard, Player, Difficulty } from "@/lib/types";
@@ -51,7 +52,7 @@ const getEffectText = (key: string, value: number) => {
 
 const EffectDisplay = ({ effect, difficulty }: { effect: Record<string, number>, difficulty: Difficulty }) => {
     if (difficulty === 'hard') {
-        return <p className="text-sm text-muted-foreground italic">As consequências são desconhecidas...</p>;
+        return null;
     }
 
     if (difficulty === 'medium') {
@@ -72,6 +73,7 @@ const EffectDisplay = ({ effect, difficulty }: { effect: Record<string, number>,
     // Difficulty is 'easy'
     return (
         <div className="flex flex-col gap-1">
+             <p className="text-sm text-muted-foreground mb-1">Efeitos:</p>
             {Object.entries(effect).map(([key, value]) => (
                 <div key={key} className="flex items-center gap-2 text-xs">
                     <EffectIcon effectType={key} change={value} />
@@ -106,7 +108,9 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
                 )}
             >
                 <h3 className="font-bold text-lg text-foreground">{option.text}</h3>
-                <div className="flex-grow my-4 border-b border-border/50" />
+                
+                {difficulty !== 'hard' && <div className="flex-grow my-4 border-b border-border/50" />}
+
                 <div className="flex flex-col gap-2">
                     <EffectDisplay effect={option.effect} difficulty={difficulty} />
                 </div>
