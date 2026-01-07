@@ -35,15 +35,14 @@ export default function CreateGameForm({ userUid, playerName, onPlayerNameChange
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userUid, playerName }),
       });
+      
+      const result = await response.json();
 
       if (!response.ok) {
         // Handle non-successful responses gracefully
-        const errorResult = await response.json().catch(() => null); // Gracefully handle non-JSON error bodies
-        const errorMessage = errorResult?.error || `Erro ${response.status}: ${response.statusText}`;
+        const errorMessage = result?.error || `Erro ${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
       }
-      
-      const result = await response.json();
       
       toast({
         title: 'Jogo Criado!',
