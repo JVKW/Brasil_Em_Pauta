@@ -10,117 +10,137 @@ O projeto é construído como uma aplicação web moderna, utilizando uma arquit
 
 - **Frontend:** Next.js (React) com TypeScript
 - **UI:** ShadCN, Tailwind CSS, Lucide React (ícones)
-- **Backend & Banco de Dados:** Firebase (Firestore para banco de dados, Firebase Authentication para usuários)
+- **Backend & Banco de Dados:** API REST customizada com banco de dados PostgreSQL.
 - **Funcionalidades de IA:** Genkit (para futuras expansões)
 
 ---
 
-## 2. Arquitetura do Backend e Fluxo de Dados (Firebase)
+## 2. Arquitetura do Backend e Fluxo de Dados (API REST)
 
-O backend é "serverless", totalmente gerenciado pelo Firebase. Esta seção detalha como cada ação do usuário interage com o backend.
+O backend é construído sobre uma API REST que se comunica com um banco de dados PostgreSQL. O frontend interage com esta API para todas as ações do jogo. Esta seção detalha como cada ação do usuário interage com o backend.
 
-### 2.1. Modelo de Dados: A Partida como um Documento Único
+### 2.1. Modelo de Dados Relacional (PostgreSQL)
 
-A principal decisão de arquitetura é tratar **cada partida como um único documento** no Firestore. Isso é diferente de um banco de dados relacional tradicional com tabelas separadas para `partidas` e `jogadores`.
+Diferente de um modelo NoSQL, usamos um banco de dados relacional que separa as informações em tabelas distintas, conectadas por chaves estrangeiras.
 
-- **Coleção Principal:** `game_sessions`
-- **Documento:** Cada documento nesta coleção é uma partida completa, identificado por um `gameCode` de 6 dígitos (ex: `AB7DE1`).
+- **`game_sessions`:** Contém o estado geral de uma partida (código da sala, status, turno).
+- **`players`:** Cada linha é um jogador e está ligada a uma `game_session` através de uma chave estrangeira (`game_session_id`).
+- **`nation_states`:** Armazena os indicadores da nação, também ligada 1-para-1 com uma `game_session`.
+- **`decision_cards`:** Tabela estática com a definição de todas as cartas possíveis no jogo.
+- **`session_decision_cards`:** Tabela de junção que representa o "deck" de uma partida específica, indicando quais cartas foram sorteadas e se já foram resolvidas.
 
 **Vantagens deste modelo:**
-- **Atômico:** Todas as informações de uma partida (jogadores, indicadores, logs) estão em um só lugar. Uma única operação de escrita (`updateDoc`) pode alterar múltiplos aspectos do jogo de forma segura.
-- **Eficiente:** O cliente só precisa "escutar" (`useDoc`) um único documento para receber todas as atualizações em tempo real.
-- **Simples de Gerenciar:** Ao reiniciar ou terminar uma partida, basta atualizar ou deletar um único documento.
-
-#### Estrutura do Documento `game_session`:
-```json
-// /game_sessions/{gameCode}
-{
-  "gameCode": "AB7DE1",
-  "creatorId": "uid_do_criador",
-  "status": "waiting" | "in_progress" | "completed",
-  "createdAt": "timestamp",
-  "boardPosition": 1,
-  "indicators": { ... },
-  "players": {
-    "uid_jogador_1": { "name": "Nome 1", "role": "ministerOfEducation", ... },
-    "uid_jogador_2": { "name": "Nome 2", "role": "influencer", ... }
-  },
-  "currentPlayerIndex": 0,
-  "turn": 1,
-  "currentCardId": "card2",
-  "logs": [ ... ]
-}
-```
-- **`players` é um Mapa (Objeto), não uma Tabela Separada:** A chave de cada jogador é seu `uid` (ID de usuário do Firebase). Não há "chave estrangeira". O jogador *existe dentro* do documento da partida.
-
----
+- **Integridade dos Dados:** O banco de dados garante que um jogador não pode existir sem uma partida, por exemplo.
+- **Consultas Complexas:** Facilita a agregação de dados e a geração de relatórios no futuro.
+- **Estrutura Clara:** A separação de responsabilidades entre as tabelas é bem definida.
 
 ### 2.2. Detalhamento do Fluxo de Ações do Usuário
 
 #### Ação 1: Abrir o Jogo (Primeira Visita)
-1.  **Ação do Usuário:** Abre a URL do jogo pela primeira vez.
-2.  **Processamento no Backend (Firebase Authentication):**
-    - O aplicativo cliente chama a função `signInAnonymously` do Firebase Auth.
-    - O Firebase cria uma conta de usuário anônima e temporária, retornando um **ID de Usuário (`uid`)** único. Este `uid` é a identidade do jogador para todas as ações futuras.
-3.  **Interface:** O lobby é exibido, mostrando o `uid` do jogador.
+1.  **Ação do Usuário:** Abre a URL do jogo.
+2.  **Processamento no Frontend:** O arquivo `src/app/page.tsx` executa uma função `getOrCreateUserUid`. Se não houver um `userUid` salvo no `localStorage` do navegador, um novo ID único é gerado e salvo. Este `uid` é a identidade do jogador para todas as ações futuras na API.
+3.  **Interface:** O lobby é exibido, mostrando opções para criar ou entrar em um jogo.
 
 #### Ação 2: Criar uma Nova Partida
-1.  **Ação do Usuário:** Digita um nome (ex: "Maria") e clica em "Criar Partida".
-2.  **Processamento no Frontend/Backend:**
-    - O código do cliente (em `CreateGameForm.tsx`) gera um `gameCode` único de 6 caracteres (ex: `XJ3K9M`).
-    - Um objeto `GameSession` completo é montado em memória, contendo:
-        - `gameCode`, `creatorId` (o `uid` do jogador "Maria"), `status: 'waiting'`.
-        - O estado inicial dos indicadores (`initialGameState`).
-        - Um mapa `players` contendo apenas o criador: `{[maria_uid]: { name: "Maria", role: ..., capital: 5, ...}}`.
-    - Uma única chamada `setDoc` é feita ao Firestore para criar um novo documento em `/game_sessions/XJ3K9M` com todos os dados acima.
-3.  **Interface:** O jogador é redirecionado para a tela do jogo (`GameClient`), que agora observa as mudanças no documento `XJ3K9M`.
+1.  **Ação do Usuário:** Digita um nome e clica em "Criar Partida".
+2.  **Processamento no Frontend/Backend (`CreateGameForm.tsx`):**
+    - O frontend envia uma requisição `POST` para o endpoint `/game/create` com o `userUid` e `playerName`.
+    - **No Backend:**
+        - A API executa a função `createGame`.
+        - Ela gera um `gameCode` único.
+        - Cria uma nova linha na tabela `game_sessions`.
+        - Cria uma linha correspondente em `nation_states` com os indicadores iniciais.
+        - Adiciona o criador como o primeiro jogador na tabela `players`, atribuindo o papel de "Presidente".
+        - Tudo isso ocorre em uma transação para garantir a atomicidade.
+        - Retorna o `gameCode` para o frontend.
+3.  **Interface:** O jogador é redirecionado para a tela do jogo (`/game/:gameCode`), onde o componente `GameClient` começa a sondar (poll) a API para obter o estado do jogo.
 
 #### Ação 3: Entrar em uma Partida Existente
-1.  **Ação do Usuário:** Digita um nome (ex: "João") e um código de partida (ex: `XJ3K9M`) e clica em "Entrar na Partida".
+1.  **Ação do Usuário:** Digita um nome, um código de partida e clica em "Entrar na Partida".
 2.  **Processamento no Frontend/Backend (`JoinGameForm.tsx`):**
-    - O código cliente chama `getDoc` para ler o documento `/game_sessions/XJ3K9M` do Firestore.
-    - **Verificações de Lógica de Negócio (no cliente):**
-        - O documento existe?
-        - O `status` do jogo é `waiting`?
-        - O número de jogadores (`Object.keys(players).length`) é menor que 4?
-        - O `uid` de "João" já não está na lista de jogadores?
-    - **Se todas as verificações passarem:**
-        - Um novo objeto de jogador para "João" é criado em memória.
-        - Um novo mapa `updatedPlayers` é criado, combinando os jogadores existentes com o novo jogador "João".
-        - Uma chamada `updateDoc` é feita para o documento `XJ3K9M`, substituindo todo o campo `players` pelo `updatedPlayers`.
-3.  **Interface:** "João" é redirecionado para a tela do jogo, que começa a observar o documento `XJ3K9M`. Os outros jogadores já na partida veem "João" aparecer no painel de jogadores instantaneamente, pois o `useDoc` deles detecta a atualização no campo `players`.
+    - O frontend envia uma requisição `POST` para `/game/join` com `gameCode`, `userUid` e `playerName`.
+    - **No Backend:**
+        - A API executa a função `joinGame`.
+        - **Verificações de Lógica de Negócio:**
+            - A partida existe?
+            - O `status` é `waiting`?
+            - O número de jogadores é menor que 4?
+            - Este `userUid` já está na partida?
+        - **Se tudo estiver OK:**
+            - Atribui um `character_role` ao novo jogador.
+            - Insere uma nova linha na tabela `players`, associada à `game_session_id` correta.
+            - Retorna sucesso.
+3.  **Interface:** O jogador é redirecionado para a tela do jogo. O `GameClient`, através de sua sondagem periódica (`GET /game/:gameCode`), detecta o novo jogador na lista e atualiza a interface para todos.
 
-#### Ação 4: Tomar uma Decisão no Jogo
-1.  **Ação do Usuário:** É a vez do jogador "Maria". Ela clica em uma opção de decisão.
+#### Ação 4: Iniciar a Partida
+1.  **Ação do Usuário:** O criador da partida, vendo que há jogadores suficientes, clica no botão "Iniciar Partida".
 2.  **Processamento no Frontend/Backend (`GameClient.tsx`):**
-    - A função `handleDecision` é chamada.
-    - O código do cliente calcula os **novos valores** para os indicadores, capital do jogador, posição no tabuleiro, etc., com base nos efeitos da decisão e no cargo da "Maria".
-    - Ele também determina o `nextPlayerIndex` e, se necessário, avança o `turn`.
-    - Um novo `currentCardId` é sorteado.
-    - Uma única e atômica chamada `updateDoc` é feita para o documento da partida, atualizando **todos** os campos que mudaram de uma só vez: `indicators`, `players` (o capital da Maria), `boardPosition`, `currentPlayerIndex`, `turn`, `currentCardId`, e adicionando uma entrada ao `log`.
-3.  **Sincronização em Tempo Real:**
-    - A atualização no Firestore é propagada para todos os clientes que estão "escutando" aquele documento.
-    - O hook `useDoc` em todos os navegadores (de todos os jogadores) recebe os novos dados.
-    - O React re-renderiza os componentes (`ResourceDashboard`, `PlayerDashboard`, etc.) com os novos valores.
-    - O resultado é que todos os jogadores veem os indicadores mudarem, a coroa passar para o próximo jogador, e a carta de decisão mudar, tudo em tempo real e de forma sincronizada.
+    - O frontend envia uma requisição `POST` para `/game/start` com o `gameCode`.
+    - **No Backend:**
+        - A API muda o `status` da `game_session` para `in_progress`.
+        - **Sorteia a primeira carta de decisão** para a partida e a vincula na tabela `session_decision_cards`.
+3.  **Sincronização:**
+    - Na próxima sondagem (`GET /game/:gameCode`), todos os clientes receberão o novo `status: 'in_progress'` e os dados da `currentCard`.
+    - O frontend renderiza a carta de decisão e habilita os controles para o jogador da vez.
 
-#### Ação 5: Reiniciar a Partida
-1.  **Ação do Usuário:** Qualquer jogador clica no botão "Reiniciar".
+#### Ação 5: Tomar uma Decisão no Jogo
+1.  **Ação do Usuário:** O jogador da vez clica em uma opção de decisão (Ética ou Corrupta).
 2.  **Processamento no Frontend/Backend (`GameClient.tsx`):**
-    - A função `handleRestart` é chamada.
-    - Um novo objeto de estado de jogo é montado, similar ao `initialGameState`, mas preservando o `gameCode`, `creatorId`, e o criador original no mapa de `players` (com capital resetado). Todos os outros jogadores são removidos. O status volta para `'waiting'`.
-    - Uma chamada `updateDoc` sobrescreve os campos do documento da partida com este novo estado inicial.
-3.  **Interface:** A tela de todos os jogadores é resetada para o estado de "lobby de espera" dentro da mesma partida, pois o `useDoc` detectou a mudança de status e a remoção dos jogadores. Novos jogadores podem agora entrar usando o mesmo código.
+    - O frontend envia uma `POST` para `/game/decision` com `gameCode`, `userUid` e a escolha (`ethical` ou `corrupt`).
+    - **No Backend:**
+        - A API valida se é o turno do jogador que fez a requisição.
+        - Calcula os novos valores para os indicadores, aplicando as regras de negócio (como limites de 0 a 10).
+        - Atualiza as tabelas `nation_states` e `players` (para o capital).
+        - Marca a carta atual como resolvida (`is_resolved = TRUE`).
+        - Atualiza o `current_player_index` e, se necessário, o `current_turn` na tabela `game_sessions`.
+        - Sorteia uma nova carta para o próximo turno.
+        - Todas essas operações de escrita ocorrem em uma transação.
+3.  **Sincronização:**
+    - Na próxima sondagem, os clientes de todos os jogadores recebem o estado atualizado do jogo (novos indicadores, novo jogador da vez, nova carta), e a interface é re-renderizada para refletir as mudanças.
 
-### 2.3. Regras de Segurança (`firestore.rules`)
+---
 
-As regras de segurança são a camada final que protege o banco de dados contra manipulação.
+### 3. Estrutura e Regras das Cartas de Decisão
 
-- **Leitura (`get`, `list`):** Qualquer usuário autenticado pode ler os dados de qualquer partida. Isso é necessário para que o `JoinGameForm` possa verificar o status de uma partida antes de tentar entrar.
-- **Criação (`create`):** Qualquer usuário autenticado pode criar uma nova partida.
-- **Atualização (`update`):** Um usuário só pode atualizar um documento de partida se:
-    1.  Ele já for um jogador naquela partida (seu `uid` está no mapa `players`). Isso permite que jogadores ativos façam seus movimentos.
-    2.  OU a partida estiver no estado `'waiting'`. Isso permite que novos jogadores se adicionem ao mapa `players`.
-- **Exclusão (`delete`):** Apenas o criador original da partida (`creatorId`) pode deletar o documento.
+A mecânica central do jogo gira em torno das cartas de decisão. É crucial que o backend seja a autoridade final sobre seus efeitos.
 
-Este sistema garante que apenas jogadores válidos possam interagir com uma partida em andamento, enquanto mantém o lobby aberto para novos participantes.
+#### 3.1. SQL e Estrutura da Tabela `decision_cards`
+A estrutura que você definiu é ideal. Ela armazena o dilema e os dois possíveis resultados em formato `JSONB`, o que oferece grande flexibilidade.
+
+```sql
+CREATE TABLE decision_cards (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR(255) NOT NULL,
+    dilemma TEXT NOT NULL,
+    ethical_choice_effect JSONB NOT NULL,
+    corrupt_choice_effect JSONB NOT NULL
+);
+```
+
+**Chaves de Efeito Válidas (Dentro do JSON):**
+*   `economy`, `education`, `wellbeing`, `popular_support`, `hunger`, `military_religion`: Afetam os indicadores da nação.
+*   `board_position`: Move o peão no tabuleiro.
+*   `capital`: Afeta o capital **do jogador que tomou a decisão**.
+
+#### 3.2. Responsabilidades do Backend (Regras de Negócio)
+O frontend pode mostrar os efeitos previstos, mas **o backend deve calcular e aplicar os resultados** para garantir a integridade do jogo.
+
+1.  **Cálculo dos Efeitos:** Ao receber um `POST /game/decision`, o backend lê o `JSONB` da escolha e aplica cada efeito.
+2.  **Limites (Clamping):** Todos os indicadores da nação (`economy`, `education`, etc.) **devem ser travados (clamped) entre 0 e 10** no backend. Se `Economia` é 9 e o efeito é `+2`, o valor salvo no banco de dados deve ser `10`.
+3.  **Lógica do Turno:** Após aplicar os efeitos, o backend **deve**:
+    *   Marcar a carta atual como resolvida.
+    *   Atualizar o `current_player_index` e, se necessário, o `current_turn`.
+    *   **Sortear uma nova carta** para o próximo jogador, garantindo que o jogo nunca fique sem uma carta ativa enquanto estiver `in_progress`.
+
+---
+
+### 4. Outras Responsabilidades Críticas do Backend
+
+1.  **Atribuição de Papéis (`character_role`):** Ao receber um `POST /game/join`, o backend deve atribuir um `character_role` único a cada novo jogador. Ele deve verificar os papéis já em uso na partida e selecionar um dos disponíveis.
+2.  **Checagem de Condições de Vitória/Derrota:** Após cada decisão, o backend deve verificar se o jogo terminou.
+    *   **Derrota:** Se um indicador chegar a 0 ou a fome chegar a 10, o backend muda o `status` para `finished`.
+    *   **Vitória:** Se a `board_position` atingir o final com as condições cumpridas, ou um jogador atingir um objetivo secreto, o backend finaliza a partida.
+3.  **Segurança e Validação:** O backend é a última linha de defesa. Ele deve sempre validar:
+    *   Este `userUid` pertence a esta partida?
+    *   É o turno deste jogador?
+    *   Esta partida já não terminou?
