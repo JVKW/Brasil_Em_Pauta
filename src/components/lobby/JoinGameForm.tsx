@@ -39,11 +39,14 @@ export default function JoinGameForm({ userUid, playerName, onPlayerNameChange, 
         body: JSON.stringify({ gameCode: upperCaseGameCode, userUid, playerName }),
       });
       
-      const result = await response.json();
-
       if (!response.ok) {
-        throw new Error(result.error || 'Falha ao entrar na partida.');
+        // If the response is not OK, try to parse the error message from the body.
+        const errorResult = await response.json().catch(() => null); // Gracefully handle non-JSON error bodies
+        const errorMessage = errorResult?.error || `Erro ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
       }
+      
+      const result = await response.json();
       
       toast({ title: 'Você entrou no jogo!', description: `Bem-vindo à partida ${upperCaseGameCode}.` });
       onGameJoined(upperCaseGameCode, playerName);
@@ -53,7 +56,7 @@ export default function JoinGameForm({ userUid, playerName, onPlayerNameChange, 
       toast({
             variant: 'destructive',
             title: 'Erro ao entrar na partida',
-            description: error.message,
+            description: error.message || 'Ocorreu um erro desconhecido.',
         });
     } finally {
         setIsLoading(false);
