@@ -43,17 +43,15 @@ export default function JoinGameForm({ userUid, playerName, onPlayerNameChange, 
         let errorMessage = "Falha ao entrar na partida.";
         try {
             const result = await response.json();
-            // A API pode retornar o erro em result.error ou result.message
-            errorMessage = result.error || result.message || `Erro ${response.status}.`;
+            errorMessage = result.error || `Erro ${response.status}.`;
         } catch (e) {
-            // Se não houver corpo JSON, use o status text
-            errorMessage = response.statusText || `Ocorreu um erro (${response.status}).`;
+            errorMessage = `Ocorreu um erro (${response.status}).`;
         }
 
         if (response.status === 404) {
             errorMessage = "Partida não encontrada. Verifique o código e tente novamente.";
-        } else if (response.status === 403 || response.status === 409) {
-            errorMessage = "Não foi possível entrar. A sala pode estar cheia ou o jogo já começou.";
+        } else if (response.status === 403 || response.status === 409 || response.status === 400) {
+             errorMessage = "Não foi possível entrar. A sala pode estar cheia ou o jogo já começou.";
         }
 
         throw new Error(errorMessage);

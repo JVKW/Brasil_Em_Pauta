@@ -65,31 +65,29 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     fetchGameSession();
   }, [fetchGameSession]);
 
-  useEffect(() => {
-    if (gameSession && gameSession.status === 'waiting' && gameSession.players.length === 4) {
-      const startGame = async () => {
-        try {
-          const response = await fetch(`${API_BASE_URL}/game/start`, {
+  const handleStartGame = async () => {
+    if (!gameSession || userUid !== gameSession.creator_user_uid || gameSession.status !== 'waiting') return;
+
+    setIsProcessing(true);
+    try {
+        const response = await fetch(`${API_BASE_URL}/game/start`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ gameCode: gameSession.game_code }),
-          });
-          if (!response.ok) {
-            throw new Error('Falha ao iniciar a partida.');
-          }
-          await fetchGameSession();
-          toast({ title: "A partida começou!", description: "A sala está cheia. Bom jogo!" });
-        } catch (error: any) {
-          console.error("Error starting game:", error);
-          toast({ variant: 'destructive', title: 'Erro', description: error.message });
+        });
+        if (!response.ok) {
+            const result = await response.json();
+            throw new Error(result.error || 'Falha ao iniciar a partida.');
         }
-      };
-      
-      if (userUid === gameSession.creator_user_uid) {
-        startGame();
-      }
+        await fetchGameSession();
+        toast({ title: "A partida começou!", description: "Bom jogo!" });
+    } catch (error: any) {
+        console.error("Error starting game:", error);
+        toast({ variant: 'destructive', title: 'Erro', description: error.message });
+    } finally {
+        setIsProcessing(false);
     }
-  }, [gameSession, userUid, fetchGameSession, toast]);
+  };
 
 
   const players = useMemo(() => gameSession?.players || [], [gameSession?.players]);
@@ -179,7 +177,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       );
   }
   
-  // This is the key change. If gameSession hasn't been fetched yet, show a loading state.
   if (!gameSession) {
      return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background">
@@ -193,6 +190,9 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
 
   const isCurrentPlayerTurn = !!currentPlayer && userUid === currentPlayer.user_uid;
   const isWaiting = gameSession.status === 'waiting';
+  const isCreator = userUid === gameSession.creator_user_uid;
+  const canStart = isCreator && isWaiting && players.length >= 2;
+
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
@@ -207,7 +207,22 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
             <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
           </div>
           <div className="lg:col-span-6 flex flex-col overflow-hidden">
-            {!isWaiting && currentCard && currentPlayer ? (
+            {isWaiting ? (
+                 <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                     <p className="mt-4 text-muted-foreground">
+                        {players.length < 2 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
+                    </p>
+                    <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
+
+                    {canStart && (
+                        <Button onClick={handleStartGame} disabled={isProcessing} className="mt-6">
+                            {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            Iniciar Partida
+                        </Button>
+                    )}
+                </div>
+            ) : currentCard && currentPlayer ? (
                 <DecisionCardComponent
                 card={currentCard}
                 onDecision={handleDecision}
@@ -215,12 +230,9 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
                 currentPlayer={currentPlayer}
                 />
             ) : (
-                <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
+                 <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                     <p className="mt-4 text-muted-foreground">
-                        {isWaiting ? "Aguardando mais jogadores..." : "Aguardando próxima rodada..."}
-                    </p>
-                    <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
+                     <p className="mt-4 text-muted-foreground">Aguardando próxima rodada...</p>
                 </div>
             )}
           </div>
@@ -237,5 +249,3 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     </div>
   );
 }
-
-    
