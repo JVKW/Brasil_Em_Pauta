@@ -179,8 +179,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       );
   }
   
-  // Condição ajustada: se a sessão não existe, mostre o carregamento.
-  // A verificação de currentPlayer e currentCard agora acontece dentro do render principal.
   if (!gameSession) {
      return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background">
@@ -192,8 +190,19 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     );
   }
 
-  const isCurrentPlayerTurn = !!currentPlayer && userUid === currentPlayer.user_uid;
+  // Moved after all loading/error/null states
   const indicators = gameSession.nation_state;
+  const isCurrentPlayerTurn = !!currentPlayer && userUid === currentPlayer.user_uid;
+
+  // Add a final check for indicators before rendering the main view
+  if (!indicators) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="mt-4 text-muted-foreground">Sincronizando estado da nação...</p>
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
