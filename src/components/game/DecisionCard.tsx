@@ -5,7 +5,6 @@ import { roleDetails, indicatorDetails } from "@/lib/game-data";
 import { Loader2, Coins, HelpCircle, ArrowUp, Circle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Separator } from "../ui/separator";
 
 type DecisionCardProps = {
   card: DecisionCard;
@@ -42,22 +41,23 @@ const getEffectText = (key: string, value: number) => {
     const effectName = indicatorDetails[key]?.name || (key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' '));
     const sign = value > 0 ? '+' : '';
     if (key === 'board_position') {
-      return `Avança ${value} casa(s) no tabuleiro`;
+      return `Avança ${value} casa(s)`;
     }
      if (key === 'capital') {
-      return `Capital do jogador: ${sign}${value}`;
+      return `Capital: ${sign}${value}`;
     }
     return `${effectName}: ${sign}${value}`;
 };
 
 const EffectDisplay = ({ effect, difficulty }: { effect: Record<string, number>, difficulty: Difficulty }) => {
     if (difficulty === 'hard') {
-        return null; // No effects shown on hard
+        return <p className="text-sm text-muted-foreground italic">As consequências são desconhecidas...</p>;
     }
 
     if (difficulty === 'medium') {
         return (
-             <div className="flex flex-wrap gap-2">
+             <div className="flex flex-wrap gap-2 items-center">
+                <p className="text-sm text-muted-foreground mr-2">Efeitos:</p>
                 {Object.entries(effect).map(([key, value]) => {
                      if (key === 'board_position') return null; // Don't show board position changes as dots
                      const isPositive = key === 'hunger' ? value < 0 : value > 0;
@@ -71,11 +71,11 @@ const EffectDisplay = ({ effect, difficulty }: { effect: Record<string, number>,
 
     // Difficulty is 'easy'
     return (
-        <div className="flex flex-col gap-2 text-sm">
+        <div className="flex flex-col gap-1">
             {Object.entries(effect).map(([key, value]) => (
-                <div key={key} className="flex items-center gap-3">
+                <div key={key} className="flex items-center gap-2 text-xs">
                     <EffectIcon effectType={key} change={value} />
-                    <span className="text-foreground/90">{getEffectText(key, value)}</span>
+                    <span className="text-foreground/80">{getEffectText(key, value)}</span>
                 </div>
             ))}
         </div>
@@ -95,29 +95,30 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
       </CardHeader>
       <CardContent className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 p-4 items-stretch">
         {card.options.map((option, index) => (
-            <div key={index} className="flex flex-col rounded-lg border bg-secondary/30 p-4">
+            <button 
+                key={index} 
+                onClick={() => onDecision(index)}
+                disabled={isProcessing || !isMyTurn}
+                className={cn(
+                    "flex flex-col rounded-lg border bg-secondary/30 p-4 text-left transition-all",
+                    "hover:bg-primary/10 hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary",
+                    "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-secondary/30 disabled:hover:border-transparent"
+                )}
+            >
                 <h3 className="font-bold text-lg text-foreground">{option.text}</h3>
-                <Separator className="my-3"/>
-                <div className="flex flex-col gap-2 mb-4">
-                    <p className="font-semibold text-muted-foreground mb-1">Consequências:</p>
+                <div className="flex-grow my-4 border-b border-border/50" />
+                <div className="flex flex-col gap-2">
                     <EffectDisplay effect={option.effect} difficulty={difficulty} />
                 </div>
-                <div className="mt-auto">
-                    <Button
-                        variant="secondary"
-                        className="w-full mt-2 hover:bg-primary/20 hover:border-primary border-2 border-transparent"
-                        onClick={() => onDecision(index)}
-                        disabled={isProcessing || !isMyTurn}
-                    >
-                        {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Escolher'}
-                    </Button>
-                </div>
-            </div>
+            </button>
         ))}
       </CardContent>
        <CardFooter>
         <p className="text-sm text-muted-foreground w-full text-center">
-            É a vez de <span className="font-bold text-primary">{currentPlayer.nickname}</span> ({playerRole?.name || 'Desconhecido'}) tomar uma decisão.
+            {isMyTurn 
+                ? <span className="text-primary font-bold animate-pulse">Sua vez de decidir, {playerRole?.name || 'jogador'}.</span>
+                : <>É a vez de <span className="font-bold text-primary">{currentPlayer.nickname}</span> ({playerRole?.name || 'Desconhecido'}) tomar uma decisão.</>
+            }
         </p>
       </CardFooter>
     </Card>

@@ -120,6 +120,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
           gameCode: gameSession.game_code,
           userUid: userUid,
           choice: choiceIndex,
+          difficulty: gameSession.difficulty, // Envia a dificuldade para o backend
         }),
       });
 
