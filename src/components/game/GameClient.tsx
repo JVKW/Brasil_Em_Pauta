@@ -99,8 +99,8 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
   }, [players, gameSession]);
   
   const currentCard = useMemo(() => {
-      if (!gameSession || !gameSession.current_card) return null;
-      return gameSession.current_card;
+      if (!gameSession || !gameSession.currentCard) return null;
+      return gameSession.currentCard;
   }, [gameSession]);
 
   const handleRestart = async () => {
@@ -179,6 +179,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       );
   }
   
+  // This is the key change. If gameSession hasn't been fetched yet, show a loading state.
   if (!gameSession) {
      return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background">
@@ -190,34 +191,23 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
     );
   }
 
-  // Moved after all loading/error/null states
-  const indicators = gameSession.nation_state;
   const isCurrentPlayerTurn = !!currentPlayer && userUid === currentPlayer.user_uid;
-
-  // Add a final check for indicators before rendering the main view
-  if (!indicators) {
-      return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="mt-4 text-muted-foreground">Sincronizando estado da nação...</p>
-        </div>
-    );
-  }
+  const isWaiting = gameSession.status === 'waiting';
 
   return (
     <div className="flex flex-col h-screen bg-background text-foreground overflow-hidden">
       <Header onRestart={handleRestart} gameCode={gameSession.game_code} />
       <main className="flex-1 container mx-auto px-4 py-2 flex flex-col gap-2 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-          <ResourceDashboard indicators={indicators} />
-          <GameBoard boardPosition={indicators.board_position} bosses={initialBosses} />
+          <ResourceDashboard indicators={gameSession} />
+          <GameBoard boardPosition={gameSession.board_position} bosses={initialBosses} />
         </div>
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 overflow-hidden min-h-0">
           <div className="lg:col-span-3 flex flex-col overflow-hidden">
             <PlayerDashboard players={players} currentPlayerId={currentPlayer?.id} />
           </div>
           <div className="lg:col-span-6 flex flex-col overflow-hidden">
-            {gameSession.status === 'in_progress' && currentCard && currentPlayer ? (
+            {!isWaiting && currentCard && currentPlayer ? (
                 <DecisionCardComponent
                 card={currentCard}
                 onDecision={handleDecision}
@@ -227,7 +217,9 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
             ) : (
                 <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="mt-4 text-muted-foreground">Aguardando mais jogadores...</p>
+                     <p className="mt-4 text-muted-foreground">
+                        {isWaiting ? "Aguardando mais jogadores..." : "Aguardando próxima rodada..."}
+                    </p>
                     <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
                 </div>
             )}

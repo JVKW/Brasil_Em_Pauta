@@ -9,6 +9,7 @@ export const roleDetails: Record<Role, RoleDetails> = {
   religious: { name: 'Líder Religioso', description: 'Aumenta o Bem-Estar e Apoio Popular.', icon: HandHelping },
   influencer: { name: 'Influencer Digital', description: 'Manipula o Apoio Popular facilmente.', icon: Megaphone },
   militaryCommander: { name: 'Comandante Militar', description: 'Evita que indicadores caiam em crises.', icon: ShieldCheck },
+  Presidente: { name: 'Presidente', description: 'O líder da nação, com grande responsabilidade.', icon: Landmark },
 };
 
 export const indicatorDetails: Record<string, { name: string; icon: LucideIcon; description: string }> = {

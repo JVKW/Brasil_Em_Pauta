@@ -10,31 +10,31 @@ export type Role =
   | 'agriculture'
   | 'religious'
   | 'influencer'
-  | 'militaryCommander';
+  | 'militaryCommander'
+  | 'Presidente'; // Added from API data
 
 export type Player = {
   id: string;
-  game_session_id: string;
+  game_session_id?: string; // This is not in the player object from API
   user_uid: string;
   name: string;
   character_role: Role;
-  capital: number;
-  avatar: string; // Assuming avatar is a string reference
-  isOpportunist?: boolean; // The API doesn't seem to have this, but keeping it for now
+  capital: number | string; // API returns string "50.00"
+  avatar?: string;
+  isOpportunist?: boolean;
 };
 
 export type DecisionEffect = Record<string, number>;
 
 export type DecisionCard = {
-  id: string;
+  id: string; // or session_card_id from API
   title: string;
   dilemma: string;
   ethical_choice_effect: DecisionEffect;
   corrupt_choice_effect: DecisionEffect;
+  session_card_id?: string; // From API
 };
 
-// This is a placeholder as the API doesn't detail it yet.
-// We'll use the static initialBosses from game-data for now.
 export type Boss = {
   id:string;
   name: string;
@@ -60,37 +60,32 @@ export type LogEntry = {
   effects: string;
 };
 
-export type NationState = {
-    id: string;
-    game_session_id: string;
-    economy: number;
-    education: number;
-    wellbeing: number;
-    popular_support: number;
-    hunger: number;
-    military_religion: number;
-    board_position: number;
-}
-
 // Represents the entire state of a game session from GET /game/:gameCode
+// This is now a flattened structure based on the new API.
 export type GameSession = {
-  id: string;
+  session_id: string;
   game_code: string;
   status: 'waiting' | 'in_progress' | 'finished';
-  created_at: string; // ISO String
   creator_user_uid: string;
   current_turn: number;
   current_player_index: number;
   
+  // Nation state properties are now at the top level
+  economy: number;
+  education: number;
+  wellbeing: number;
+  popular_support: number;
+  hunger: number;
+  military_religion: number;
+  board_position: number;
+  
   // Nested data from the API
   players: Player[];
-  nation_state: NationState;
-  current_card: DecisionCard | null;
-  logs: LogEntry[]; // Assuming logs are part of the payload
+  currentCard: DecisionCard | null; // Renamed from current_card
+  logs?: LogEntry[]; 
   gameOverMessage?: string;
 };
 
 // Kept for compatibility with some components that might use it
-export type GameState = Omit<GameSession, 'id' | 'game_code' | 'creator_user_uid' | 'status' | 'created_at' | 'players' | 'current_turn' | 'current_player_index' | 'current_card' | 'logs'>;
+export type GameState = Omit<GameSession, 'session_id' | 'game_code' | 'creator_user_uid' | 'status' | 'players' | 'current_turn' | 'current_player_index' | 'currentCard' | 'logs'>;
 export type DecisionOption = { id: string; name: string, description: string; effects: DecisionEffect[]; variant: string; };
-

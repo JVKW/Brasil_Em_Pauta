@@ -1,14 +1,33 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import type { NationState } from "@/lib/types";
+import type { GameSession } from "@/lib/types";
 import { indicatorDetails } from "@/lib/game-data";
 import IndicatorBar from "./IndicatorBar";
 
 type ResourceDashboardProps = {
-  indicators: NationState;
+  indicators: GameSession; // Expect the full GameSession object
 };
 
 export default function ResourceDashboard({ indicators }: ResourceDashboardProps) {
-  const { id, game_session_id, ...indicatorValues } = indicators;
+  // Destructure all possible indicator keys from the GameSession object
+  const { 
+    economy, 
+    education, 
+    wellbeing, 
+    popular_support, 
+    hunger, 
+    military_religion 
+  } = indicators;
+
+  // Create an object with only the indicator values for easy mapping
+  const indicatorValues = {
+    economy,
+    education,
+    wellbeing,
+    popular_support,
+    hunger,
+    military_religion
+  };
+
   return (
     <Card className="shadow-lg">
       <CardHeader className="pb-2">
@@ -16,7 +35,7 @@ export default function ResourceDashboard({ indicators }: ResourceDashboardProps
       </CardHeader>
       <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
         {Object.entries(indicatorValues).map(([key, value]) => {
-          if (key === 'board_position') return null; // Don't show board position here
+          if (value === undefined || value === null) return null; // Skip if indicator is not present
           const details = indicatorDetails[key as keyof typeof indicatorDetails];
           if (!details) return null;
           return (
