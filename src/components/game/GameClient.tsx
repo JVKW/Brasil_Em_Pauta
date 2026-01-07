@@ -79,7 +79,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
             const result = await response.json();
             throw new Error(result.error || 'Falha ao iniciar a partida.');
         }
-        await fetchGameSession();
+        await fetchGameSession(); // Fetch immediately to get the new state with the card
         toast({ title: "A partida começou!", description: "Bom jogo!" });
     } catch (error: any) {
         console.error("Error starting game:", error);
@@ -159,11 +159,13 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
   }, [gameSession, currentPlayer, isProcessing, toast, userUid, fetchGameSession]);
   
 
-  if (isLoading) {
+  if (isLoading || !gameSession) {
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <p className="mt-4 text-muted-foreground">Carregando jogo...</p>
+             <p className="mt-4 text-xs text-muted-foreground">Código: {gameCode}</p>
+             <Button onClick={onLeave} variant="outline" size="sm" className="mt-4">Sair</Button>
         </div>
     );
   }
@@ -177,17 +179,6 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
       );
   }
   
-  if (!gameSession) {
-     return (
-        <div className="flex min-h-screen flex-col items-center justify-center bg-background">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="mt-4 text-muted-foreground">Aguardando dados da partida...</p>
-             <p className="mt-4 text-xs text-muted-foreground">Código: {gameCode}</p>
-             <Button onClick={onLeave} variant="outline" size="sm" className="mt-4">Sair</Button>
-        </div>
-    );
-  }
-
   const isCurrentPlayerTurn = !!currentPlayer && userUid === currentPlayer.user_uid;
   const isWaiting = gameSession.status === 'waiting';
   const isCreator = userUid === gameSession.creator_user_uid;
