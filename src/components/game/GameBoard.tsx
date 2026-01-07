@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Boss } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Flag, Shield, Star } from "lucide-react";
+import { Flag, Shield, Star, Award } from "lucide-react";
 import { indicatorDetails } from "@/lib/game-data";
 
 type GameBoardProps = {
@@ -11,7 +11,7 @@ type GameBoardProps = {
   currentBoss: Boss | null;
 };
 
-const TOTAL_STEPS = 20;
+const TOTAL_STEPS = 25; // Increased board size
 
 export default function GameBoard({ boardPosition, bosses, currentBoss }: GameBoardProps) {
   return (
@@ -36,7 +36,7 @@ export default function GameBoard({ boardPosition, bosses, currentBoss }: GameBo
               const isPassed = step < boardPosition;
 
               let Icon;
-              if (boss) Icon = Shield;
+              if (boss) Icon = boss.is_mandatory ? Shield : Award; // Different icons for mandatory/optional bosses
               if (step === 1) Icon = Flag;
               if (step === TOTAL_STEPS) Icon = Star;
               
@@ -68,7 +68,7 @@ export default function GameBoard({ boardPosition, bosses, currentBoss }: GameBo
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Casa {step}</p>
-                      {boss && <p className="font-bold text-destructive">Chefe: {boss.name} (Requer {indicatorDetails[boss.requirement.indicator]?.name || boss.requirement.indicator} {`>= ${boss.requirement.level}`})</p>}
+                      {boss && <p className={cn("font-bold", boss.is_mandatory ? "text-destructive" : "text-amber-500")}>Chefe {boss.is_mandatory ? 'Obrigatório' : 'Opcional'}: {boss.name} (Requer {indicatorDetails[boss.requirement.indicator]?.name || boss.requirement.indicator} {`>= ${boss.requirement.level}`})</p>}
                       {step === TOTAL_STEPS && <p className="font-bold text-amber-500">Justiça Social!</p>}
                     </TooltipContent>
                   </Tooltip>

@@ -9,14 +9,6 @@ export const roleDetails: Record<string, RoleDetails> = {
   Empresário: { name: 'Empresário', description: 'Influencia a economia com foco no lucro.', icon: Landmark },
   Jornalista: { name: 'Jornalista', description: 'Informa o público e molda a opinião popular.', icon: Megaphone },
   Cidadão: { name: 'Cidadão', description: 'Um cidadão comum, representando o povo.', icon: User },
-  
-  // Legado, pode ser removido se não for mais usado
-  ministerOfEducation: { name: 'Ministro da Educação', description: 'Efeito dobrado em ações para Educação.', icon: GraduationCap },
-  economyManager: { name: 'Gestor da Economia', description: 'Gera recursos mais facilmente.', icon: Landmark },
-  agriculture: { name: 'Ministro da Agricultura', description: 'Reduz a Fome com mais eficiência.', icon: Tractor },
-  religious: { name: 'Líder Religioso', description: 'Aumenta o Bem-Estar e Apoio Popular.', icon: HandHelping },
-  influencer: { name: 'Influencer Digital', description: 'Manipula o Apoio Popular facilmente.', icon: Megaphone },
-  militaryCommander: { name: 'Comandante Militar', description: 'Evita que indicadores caiam em crises.', icon: ShieldCheck },
 };
 
 export const indicatorDetails: Record<string, { name: string; icon: LucideIcon; description: string }> = {
@@ -31,8 +23,11 @@ export const indicatorDetails: Record<string, { name: string; icon: LucideIcon; 
 export const initialCards: any[] = [];
 
 export const initialBosses: Boss[] = [
-  { id: 'boss1', name: 'Negacionismo', position: 5, requirement: { indicator: 'education', level: 5 } },
-  { id: 'boss2', name: 'Corrupção Sistêmica', position: 12, requirement: { indicator: 'popular_support', level: 6 } },
-  { id: 'boss3', name: 'Fake News', position: 10, requirement: { indicator: 'education', level: 7 } },
-  { id: 'boss4', name: 'Desigualdade', position: 20, requirement: { indicator: 'wellbeing', level: 8 } },
+    { id: 'boss1', name: 'Negacionismo', position: 4, is_mandatory: true, requirement: { indicator: 'education', level: 5 } },
+    { id: 'boss2', name: 'Populismo', position: 8, is_mandatory: false, requirement: { indicator: 'popular_support', level: 4 } },
+    { id: 'boss3', name: 'Crise Fiscal', position: 12, is_mandatory: true, requirement: { indicator: 'economy', level: 6 } },
+    { id: 'boss4', name: 'Fake News', position: 15, is_mandatory: false, requirement: { indicator: 'education', level: 7 } },
+    { id: 'boss5', name: 'Corrupção Sistêmica', position: 18, is_mandatory: false, requirement: { indicator: 'popular_support', level: 6 } },
+    { id: 'boss6', name: 'Fanatismo', position: 22, is_mandatory: true, requirement: { indicator: 'military_religion', level: 8 } },
+    { id: 'boss7', name: 'Desigualdade', position: 25, is_mandatory: false, requirement: { indicator: 'wellbeing', level: 8 } },
 ];

@@ -171,7 +171,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
   const isCurrentPlayerTurn = !!currentPlayer && userUid === currentPlayer.user_uid;
   const isWaiting = gameSession.status === 'waiting';
   const isCreator = userUid === gameSession.creator_user_uid;
-  const canStart = isCreator && isWaiting && players.length >= 2;
+  const canStart = isCreator && isWaiting && players.length >= 1; // Changed to 1 for easier testing
 
   const indicators = {
     economy: gameSession.economy,
@@ -206,7 +206,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                          <p className="mt-4 text-muted-foreground">
-                            {players.length < 2 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
+                            {players.length < 1 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
                         </p>
                         <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
 
@@ -224,6 +224,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
                       isProcessing={isProcessing}
                       isMyTurn={isCurrentPlayerTurn}
                       currentPlayer={currentPlayer}
+                      difficulty={gameSession.difficulty}
                     />
                 ) : (
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">
@@ -245,7 +246,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg text-center p-4">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                          <p className="mt-4 text-muted-foreground">
-                            {players.length < 2 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
+                            {players.length < 1 ? "Aguardando mais jogadores..." : "Aguardando o anfitrião iniciar a partida..."}
                         </p>
                         <p className="text-sm text-muted-foreground">({players.length} de 4 jogadores)</p>
 
@@ -263,6 +264,7 @@ export default function GameClient({ gameCode, userUid, onLeave }: GameClientPro
                       isProcessing={isProcessing}
                       isMyTurn={isCurrentPlayerTurn}
                       currentPlayer={currentPlayer}
+                      difficulty={gameSession.difficulty}
                     />
                 ) : (
                      <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg shadow-lg">

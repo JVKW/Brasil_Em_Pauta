@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 
 export type Indicator = 'economy' | 'education' | 'wellbeing' | 'popular_support' | 'hunger' | 'military_religion';
 
-export type Role = 'Presidente' | 'Ministro' | 'General' | 'Opositor' | 'Empresário' | 'Jornalista' | 'Cidadão';
+export type Role = 'Ministro' | 'General' | 'Opositor' | 'Empresário' | 'Jornalista' | 'Cidadão';
 
 export type Player = {
   id: string;
@@ -40,6 +40,8 @@ export type RoleDetails = {
   icon: LucideIcon;
 };
 
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
 // Representa a resposta completa de GET /game/:gameCode
 export type GameSession = {
   id: string;
@@ -49,6 +51,7 @@ export type GameSession = {
   current_turn: number;
   current_player_index: number;
   end_reason?: string;
+  difficulty: Difficulty;
   
   economy: number;
   education: number;
@@ -77,6 +80,7 @@ export type Boss = {
   id:string;
   name: string;
   position: number;
+  is_mandatory: boolean;
   requirement: {
     indicator: Indicator;
     level: number;

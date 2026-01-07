@@ -6,6 +6,10 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { Difficulty } from '@/lib/types';
+
 
 interface CreateGameFormProps {
   userUid: string;
@@ -16,6 +20,7 @@ interface CreateGameFormProps {
 
 export default function CreateGameForm({ userUid, playerName, onPlayerNameChange, onGameCreated }: CreateGameFormProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const { toast } = useToast();
 
   const handleCreateGame = async () => {
@@ -33,13 +38,12 @@ export default function CreateGameForm({ userUid, playerName, onPlayerNameChange
       const response = await fetch(`${API_BASE_URL}/game/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userUid, playerName }),
+        body: JSON.stringify({ userUid, playerName, difficulty }), // Envia a dificuldade
       });
       
       const result = await response.json();
 
       if (!response.ok) {
-        // Handle non-successful responses gracefully
         const errorMessage = result?.error || `Erro ${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
       }
@@ -72,6 +76,20 @@ export default function CreateGameForm({ userUid, playerName, onPlayerNameChange
         onChange={(e) => onPlayerNameChange(e.target.value)}
         className="text-center"
       />
+      <div className='flex flex-col gap-2'>
+        <Label htmlFor="difficulty" className="text-center text-sm">Nível de Dificuldade</Label>
+        <Select onValueChange={(value: Difficulty) => setDifficulty(value)} defaultValue={difficulty}>
+            <SelectTrigger id="difficulty" className="w-full">
+                <SelectValue placeholder="Selecione a dificuldade" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="easy">Fácil</SelectItem>
+                <SelectItem value="medium">Médio</SelectItem>
+                <SelectItem value="hard">Difícil</SelectItem>
+            </SelectContent>
+        </Select>
+      </div>
+
       <Button onClick={handleCreateGame} disabled={isLoading || !playerName}>
         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         Criar Partida

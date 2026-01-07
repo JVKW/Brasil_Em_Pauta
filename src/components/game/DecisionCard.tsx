@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import type { DecisionCard, Player } from "@/lib/types";
+import type { DecisionCard, Player, Difficulty } from "@/lib/types";
 import { roleDetails, indicatorDetails } from "@/lib/game-data";
-import { Loader2, Coins, HelpCircle, ArrowUp, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Loader2, Coins, HelpCircle, ArrowUp, Circle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
@@ -13,6 +13,7 @@ type DecisionCardProps = {
   isProcessing: boolean;
   isMyTurn: boolean;
   currentPlayer: Player;
+  difficulty: Difficulty;
 };
 
 const EffectIcon = ({ effectType, change }: { effectType: string, change: number }) => {
@@ -26,11 +27,9 @@ const EffectIcon = ({ effectType, change }: { effectType: string, change: number
   if (indicatorKey) {
     const Icon = indicatorDetails[indicatorKey].icon;
     let iconColor = 'text-gray-400';
-    // For hunger, a positive change is bad (red), and a negative change is good (green).
     if (indicatorKey === 'hunger') {
        iconColor = isPositive ? 'text-red-400' : 'text-green-400';
     } else {
-    // For other indicators, a positive change is good (green), and a negative change is bad (red).
        iconColor = isPositive ? 'text-green-400' : 'text-red-400';
     }
     return <Icon className={cn("h-4 w-4", iconColor)} />;
@@ -51,7 +50,39 @@ const getEffectText = (key: string, value: number) => {
     return `${effectName}: ${sign}${value}`;
 };
 
-export default function DecisionCardComponent({ card, onDecision, isProcessing, isMyTurn, currentPlayer }: DecisionCardProps) {
+const EffectDisplay = ({ effect, difficulty }: { effect: Record<string, number>, difficulty: Difficulty }) => {
+    if (difficulty === 'hard') {
+        return null; // No effects shown on hard
+    }
+
+    if (difficulty === 'medium') {
+        return (
+             <div className="flex flex-wrap gap-2">
+                {Object.entries(effect).map(([key, value]) => {
+                     if (key === 'board_position') return null; // Don't show board position changes as dots
+                     const isPositive = key === 'hunger' ? value < 0 : value > 0;
+                     return (
+                        <Circle key={key} className={cn("h-3 w-3", isPositive ? "text-green-500 fill-green-500" : "text-red-500 fill-red-500")} />
+                     )
+                })}
+            </div>
+        )
+    }
+
+    // Difficulty is 'easy'
+    return (
+        <div className="flex flex-col gap-2 text-sm">
+            {Object.entries(effect).map(([key, value]) => (
+                <div key={key} className="flex items-center gap-3">
+                    <EffectIcon effectType={key} change={value} />
+                    <span className="text-foreground/90">{getEffectText(key, value)}</span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+export default function DecisionCardComponent({ card, onDecision, isProcessing, isMyTurn, currentPlayer, difficulty }: DecisionCardProps) {
   const playerRole = roleDetails[currentPlayer.character_role];
 
   return (
@@ -67,14 +98,9 @@ export default function DecisionCardComponent({ card, onDecision, isProcessing, 
             <div key={index} className="flex flex-col rounded-lg border bg-secondary/30 p-4">
                 <h3 className="font-bold text-lg text-foreground">{option.text}</h3>
                 <Separator className="my-3"/>
-                <div className="flex flex-col gap-2 mb-4 text-sm">
+                <div className="flex flex-col gap-2 mb-4">
                     <p className="font-semibold text-muted-foreground mb-1">Consequências:</p>
-                    {Object.entries(option.effect).map(([key, value]) => (
-                        <div key={key} className="flex items-center gap-3">
-                            <EffectIcon effectType={key} change={value} />
-                            <span className="text-foreground/90">{getEffectText(key, value)}</span>
-                        </div>
-                    ))}
+                    <EffectDisplay effect={option.effect} difficulty={difficulty} />
                 </div>
                 <div className="mt-auto">
                     <Button
